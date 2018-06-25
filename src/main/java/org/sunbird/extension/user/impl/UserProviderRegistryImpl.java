@@ -111,12 +111,14 @@ public class UserProviderRegistryImpl implements UserExtension {
 
       String mainProvider = config.getString(SunbirdExtensionConstants.SUNBIRD_MAIN_PROVIDER);
       List<Map> externalIds = (List<Map>) userMap.get(SunbirdExtensionConstants.EXTERNALIDS);
-      for (Map externalIdDetails : externalIds) {
-        if (mainProvider.equalsIgnoreCase(
-            (String) externalIdDetails.get(SunbirdExtensionConstants.PROVIDER))) {
-          userMap.put(
-              SunbirdExtensionConstants.TEACHERID,
-              externalIdDetails.get(SunbirdExtensionConstants.ID));
+      if (null != externalIds) {
+        for (Map externalIdDetails : externalIds) {
+          if (mainProvider.equalsIgnoreCase(
+              (String) externalIdDetails.get(SunbirdExtensionConstants.PROVIDER))) {
+            userMap.put(
+                SunbirdExtensionConstants.TEACHERID,
+                externalIdDetails.get(SunbirdExtensionConstants.ID));
+          }
         }
       }
 
