@@ -3,14 +3,10 @@ package org.sunbird.extension.user.impl;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.typesafe.config.Config;
-import com.typesafe.config.ConfigFactory;
 import io.opensaber.registry.client.OpensaberClient;
 import io.opensaber.registry.client.data.RequestData;
 import io.opensaber.registry.client.data.ResponseData;
 import io.opensaber.registry.exception.TransformationException;
-import io.opensaber.registry.transform.ITransformer;
-import io.opensaber.registry.transform.JsonToJsonLDTransformer;
-import io.opensaber.registry.transform.JsonldToJsonTransformer;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -26,6 +22,7 @@ import org.sunbird.common.models.util.ProjectLogger;
 import org.sunbird.common.responsecode.ResponseCode;
 import org.sunbird.extension.user.UserExtension;
 import org.sunbird.extension.util.SunbirdExtensionConstants;
+import org.sunbird.extension.util.SunbirdExtensionUtil;
 import org.sunbird.extension.util.TransformJsonUtil;
 
 /**
@@ -42,39 +39,13 @@ public class UserProviderRegistryImpl implements UserExtension {
   private static Config userReadConfig;
 
   static {
-    try {
-      userEnumsConfig = ConfigFactory.load(SunbirdExtensionConstants.USER_ENUMS_MAPPING_FILE);
-      userWriteConfig = ConfigFactory.load(SunbirdExtensionConstants.USER_WRITE_MAPPING_FILE);
-      userReadConfig = ConfigFactory.load(SunbirdExtensionConstants.USER_READ_MAPPING_FILE);
-    } catch (Exception e) {
-      ProjectLogger.log(
-          "UserProviderRegistryImpl:static : Loading of configurations for User Registry failed ==> "
-              + e.getStackTrace(),
-          LoggerEnum.ERROR.name());
-      throw new ProjectCommonException(
-          ResponseCode.userRegistryLoadConfigFailed.getErrorCode(),
-          ResponseCode.userRegistryLoadConfigFailed.getErrorMessage(),
-          ResponseCode.SERVER_ERROR.getResponseCode());
-    }
-
-    try {
-      ITransformer<String> jsonToJsonldTransformer = JsonToJsonLDTransformer.getInstance();
-      ITransformer<String> jsonldToJsonTransformer = JsonldToJsonTransformer.getInstance();
-      client =
-          OpensaberClient.builder()
-              .requestTransformer(jsonToJsonldTransformer)
-              .responseTransformer(jsonldToJsonTransformer)
-              .build();
-    } catch (Exception e) {
-      ProjectLogger.log(
-          "UserProviderRegistryImpl:static : User Registry Client Creation failed ==> "
-              + e.getStackTrace(),
-          LoggerEnum.ERROR.name());
-      throw new ProjectCommonException(
-          ResponseCode.userRegistryClientCreationFailed.getErrorCode(),
-          ResponseCode.userRegistryClientCreationFailed.getErrorMessage(),
-          ResponseCode.SERVER_ERROR.getResponseCode());
-    }
+    userEnumsConfig =
+        SunbirdExtensionUtil.loadConfig(SunbirdExtensionConstants.USER_ENUMS_MAPPING_FILE);
+    userWriteConfig =
+        SunbirdExtensionUtil.loadConfig(SunbirdExtensionConstants.USER_WRITE_MAPPING_FILE);
+    userReadConfig =
+        SunbirdExtensionUtil.loadConfig(SunbirdExtensionConstants.USER_READ_MAPPING_FILE);
+    client = SunbirdExtensionUtil.createOpensaberClient();
   }
 
   @Override
@@ -135,19 +106,26 @@ public class UserProviderRegistryImpl implements UserExtension {
           "UserProviderRegistryImpl:addUser : User Registry Add Entity failed ==> "
               + e.getStackTrace(),
           LoggerEnum.ERROR.name());
-      throw new ProjectCommonException(
-          ResponseCode.userRegistryAddEntityFailed.getErrorCode(),
-          ResponseCode.userRegistryAddEntityFailed.getErrorMessage(),
-          ResponseCode.SERVER_ERROR.getResponseCode());
+      throwUserRegistryAddEntityException();
     }
 
     Map<String, Object> responseMap = getResponseMap(responseData);
+    Map<String, Object> paramsMap =
+        (Map<String, Object>) responseMap.get(SunbirdExtensionConstants.PARAMS);
 
-    Map<String, Object> resultMap =
-        (Map<String, Object>) responseMap.get(SunbirdExtensionConstants.RESULT);
-
-    userProfileMap.put(
-        SunbirdExtensionConstants.REGISTRY_ID, resultMap.get(SunbirdExtensionConstants.ENTITY));
+    if (SunbirdExtensionConstants.STATUS_SUCCESS.equalsIgnoreCase(
+        (String) paramsMap.get(SunbirdExtensionConstants.STATUS))) {
+      Map<String, Object> resultMap =
+          (Map<String, Object>) responseMap.get(SunbirdExtensionConstants.RESULT);
+      userProfileMap.put(
+          SunbirdExtensionConstants.REGISTRY_ID, resultMap.get(SunbirdExtensionConstants.ENTITY));
+    } else {
+      String errMsg = (String) paramsMap.get(SunbirdExtensionConstants.ERR_MSG);
+      ProjectLogger.log(
+          "UserProviderRegistryImpl:addUser : User Registry Add Entity failed - " + errMsg,
+          LoggerEnum.ERROR.name());
+      throwUserRegistryAddEntityException();
+    }
   }
 
   private Map<String, Object> readUser(Map<String, Object> userIdMap) {
@@ -163,27 +141,34 @@ public class UserProviderRegistryImpl implements UserExtension {
           "UserProviderRegistryImpl:readUser : User Registry Read Entity failed ==> "
               + e.getStackTrace(),
           LoggerEnum.ERROR.name());
-      throw new ProjectCommonException(
-          ResponseCode.userRegistryReadEntityFailed.getErrorCode(),
-          ResponseCode.userRegistryReadEntityFailed.getErrorMessage(),
-          ResponseCode.SERVER_ERROR.getResponseCode());
+      throwUserRegistryReadEntityException();
     }
 
     Map<String, Object> responseMap = getResponseMap(responseData);
+    Map<String, Object> paramsMap =
+        (Map<String, Object>) responseMap.get(SunbirdExtensionConstants.PARAMS);
+    Map<String, Object> userMap = null;
 
-    Map<String, Object> resultMap =
-        (Map<String, Object>) responseMap.get(SunbirdExtensionConstants.RESULT);
-    String userType = getUserType(userIdMap);
-    Map<String, Object> userMap = (Map<String, Object>) resultMap.get(userType);
-    userMap.remove(SunbirdExtensionConstants.ID);
-
-    userMap =
-        TransformJsonUtil.transform(
-            userReadConfig,
-            userMap,
-            userType,
-            userEnumsConfig,
-            SunbirdExtensionConstants.OPERATION_MODE_READ);
+    if (SunbirdExtensionConstants.STATUS_SUCCESS.equalsIgnoreCase(
+        (String) paramsMap.get(SunbirdExtensionConstants.STATUS))) {
+      Map<String, Object> resultMap =
+          (Map<String, Object>) responseMap.get(SunbirdExtensionConstants.RESULT);
+      String userType = getUserType(userIdMap);
+      userMap = (Map<String, Object>) resultMap.get(userType);
+      userMap =
+          TransformJsonUtil.transform(
+              userReadConfig,
+              userMap,
+              userType,
+              userEnumsConfig,
+              SunbirdExtensionConstants.OPERATION_MODE_READ);
+    } else {
+      String errMsg = (String) paramsMap.get(SunbirdExtensionConstants.ERR_MSG);
+      ProjectLogger.log(
+          "UserProviderRegistryImpl:readUser : User Registry Read Entity failed - " + errMsg,
+          LoggerEnum.ERROR.name());
+      throwUserRegistryReadEntityException();
+    }
 
     return userMap;
   }
@@ -192,8 +177,8 @@ public class UserProviderRegistryImpl implements UserExtension {
 
     String accessToken = getAccessToken(userProfileMap);
     Map<String, Object> userMap = getUserMapForWrite(userProfileMap);
-    setIdforUpdate(userMap);
     ResponseData<String> responseData = null;
+
     try {
       responseData =
           client.updateEntity(
@@ -203,18 +188,23 @@ public class UserProviderRegistryImpl implements UserExtension {
           "UserProviderRegistryImpl:updateUser : User Registry Update Entity failed ==> "
               + e.getStackTrace(),
           LoggerEnum.ERROR.name());
-      throw new ProjectCommonException(
-          ResponseCode.userRegistryUpdateEntityFailed.getErrorCode(),
-          ResponseCode.userRegistryUpdateEntityFailed.getErrorMessage(),
-          ResponseCode.SERVER_ERROR.getResponseCode());
+      throwUserRegistryUpdateEntityException();
     }
 
     Map<String, Object> responseMap = getResponseMap(responseData);
-  }
+    Map<String, Object> paramsMap =
+        (Map<String, Object>) responseMap.get(SunbirdExtensionConstants.PARAMS);
 
-  private void setIdforUpdate(Map<String, Object> userMap) {
-    String registryId = getRegistryId(userMap);
-    userMap.put(SunbirdExtensionConstants.ID, registryId);
+    if (SunbirdExtensionConstants.STATUS_SUCCESS.equalsIgnoreCase(
+        (String) paramsMap.get(SunbirdExtensionConstants.STATUS))) {
+
+    } else {
+      String errMsg = (String) paramsMap.get(SunbirdExtensionConstants.ERR_MSG);
+      ProjectLogger.log(
+          "UserProviderRegistryImpl:updateUser : User Registry Update Entity failed - " + errMsg,
+          LoggerEnum.ERROR.name());
+      throwUserRegistryUpdateEntityException();
+    }
   }
 
   private Map<String, Object> getUserMapForWrite(Map<String, Object> userProfileMap) {
@@ -239,8 +229,8 @@ public class UserProviderRegistryImpl implements UserExtension {
           "UserProviderRegistryImpl:getUserType : User Registry - UserType is blank",
           LoggerEnum.ERROR.name());
       throw new ProjectCommonException(
-          ResponseCode.userRegistryUserTypeBlank.getErrorCode(),
-          ResponseCode.userRegistryUserTypeBlank.getErrorMessage(),
+          ResponseCode.errorUserRegistryUserTypeBlank.getErrorCode(),
+          ResponseCode.errorUserRegistryUserTypeBlank.getErrorMessage(),
           ResponseCode.CLIENT_ERROR.getResponseCode());
     }
     return userType;
@@ -255,8 +245,8 @@ public class UserProviderRegistryImpl implements UserExtension {
           "UserProviderRegistryImpl:setMainProviderId : User Registry - Main Provider is not configured",
           LoggerEnum.ERROR.name());
       throw new ProjectCommonException(
-          ResponseCode.userRegistryMainProviderNotConfigured.getErrorCode(),
-          ResponseCode.userRegistryMainProviderNotConfigured.getErrorMessage(),
+          ResponseCode.errorUserRegistryMainProviderNotConfigured.getErrorCode(),
+          ResponseCode.errorUserRegistryMainProviderNotConfigured.getErrorMessage(),
           ResponseCode.SERVER_ERROR.getResponseCode());
     }
     List<Map> externalIds = (List<Map>) userMap.get(SunbirdExtensionConstants.EXTERNAL_IDS);
@@ -281,8 +271,8 @@ public class UserProviderRegistryImpl implements UserExtension {
               + e.getStackTrace(),
           LoggerEnum.ERROR.name());
       throw new ProjectCommonException(
-          ResponseCode.userRegistryParseResponseFailed.getErrorCode(),
-          ResponseCode.userRegistryParseResponseFailed.getErrorMessage(),
+          ResponseCode.errorUserRegistryParseResponse.getErrorCode(),
+          ResponseCode.errorUserRegistryParseResponse.getErrorMessage(),
           ResponseCode.SERVER_ERROR.getResponseCode());
     }
   }
@@ -294,8 +284,8 @@ public class UserProviderRegistryImpl implements UserExtension {
           "UserProviderRegistryImpl:getRegistryId : User Registry - RegistryId is blank",
           LoggerEnum.ERROR.name());
       throw new ProjectCommonException(
-          ResponseCode.userRegistryUniqueIdBlank.getErrorCode(),
-          ResponseCode.userRegistryUniqueIdBlank.getErrorMessage(),
+          ResponseCode.errorUserRegistryUniqueIdBlank.getErrorCode(),
+          ResponseCode.errorUserRegistryUniqueIdBlank.getErrorMessage(),
           ResponseCode.SERVER_ERROR.getResponseCode());
     }
     return registryId;
@@ -303,15 +293,34 @@ public class UserProviderRegistryImpl implements UserExtension {
 
   private String getAccessToken(Map<String, Object> userMap) {
     String accessToken = (String) userMap.get(SunbirdExtensionConstants.X_AUTHENTICATED_USER_TOKEN);
-    if (StringUtils.isBlank(accessToken)) {
-      ProjectLogger.log(
-          "UserProviderRegistryImpl:getAccessToken : User Registry - User Access Token is blank",
-          LoggerEnum.ERROR.name());
-      throw new ProjectCommonException(
-          ResponseCode.userRegistryAccessTokenBlank.getErrorCode(),
-          ResponseCode.userRegistryAccessTokenBlank.getErrorMessage(),
-          ResponseCode.CLIENT_ERROR.getResponseCode());
-    }
     return accessToken;
+  }
+
+  private void throwUserRegistryAddEntityException() {
+    throw new ProjectCommonException(
+        ResponseCode.errorUserRegistryAddEntity.getErrorCode(),
+        ResponseCode.errorUserRegistryAddEntity.getErrorMessage(),
+        ResponseCode.SERVER_ERROR.getResponseCode());
+  }
+
+  private void throwUserRegistryReadEntityException() {
+    throw new ProjectCommonException(
+        ResponseCode.errorUserRegistryReadEntity.getErrorCode(),
+        ResponseCode.errorUserRegistryReadEntity.getErrorMessage(),
+        ResponseCode.SERVER_ERROR.getResponseCode());
+  }
+
+  private void throwUserRegistryUpdateEntityException() {
+    throw new ProjectCommonException(
+        ResponseCode.errorUserRegistryUpdateEntity.getErrorCode(),
+        ResponseCode.errorUserRegistryUpdateEntity.getErrorMessage(),
+        ResponseCode.SERVER_ERROR.getResponseCode());
+  }
+
+  private void throwUserRegistryDeleteEntityException() {
+    throw new ProjectCommonException(
+        ResponseCode.errorUserRegistryDeleteEntity.getErrorCode(),
+        ResponseCode.errorUserRegistryDeleteEntity.getErrorMessage(),
+        ResponseCode.SERVER_ERROR.getResponseCode());
   }
 }

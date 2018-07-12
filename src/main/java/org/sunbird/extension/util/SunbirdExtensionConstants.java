@@ -5,6 +5,11 @@ public final class SunbirdExtensionConstants {
   public static final String REGISTRY_ID = "registryId";
   public static final String REGISTRY = "registry";
   public static final String ID = "id";
+  public static final String PARAMS = "params";
+  public static final String STATUS = "status";
+  public static final String ERR_MSG = "errmsg";
+  public static final String STATUS_SUCCESS = "SUCCCESSFUL";
+  public static final String STATUS_ERROR = "UNSUCCESSFUL";
   public static final String RESULT = "result";
   public static final String ENTITY = "entity";
   public static final String USER_TYPE = "userType";

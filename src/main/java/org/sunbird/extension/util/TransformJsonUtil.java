@@ -16,6 +16,7 @@ import org.apache.commons.lang.StringUtils;
 import org.sunbird.common.exception.ProjectCommonException;
 import org.sunbird.common.models.util.LoggerEnum;
 import org.sunbird.common.models.util.ProjectLogger;
+import org.sunbird.common.models.util.ProjectUtil;
 import org.sunbird.common.responsecode.ResponseCode;
 
 /**
@@ -100,23 +101,26 @@ public class TransformJsonUtil {
     toField = (String) fieldMap.get(TransformationConstants.TO_FIELD_NAME);
     fromType = (String) fieldMap.get(TransformationConstants.FROM_TYPE);
     toType = (String) fieldMap.get(TransformationConstants.TO_TYPE);
-    if (StringUtils.isBlank(toField)
-        || StringUtils.isBlank(fromType)
-        || StringUtils.isBlank(toType)) {
-      ProjectLogger.log(
-          "TransformJsonUtil:transformField : Basic Config Fields(toFieldName, fromType, toType) are missing",
-          LoggerEnum.ERROR.name());
-      throw new ProjectCommonException(
-          ResponseCode.jsonTransformBasicConfigMissing.getErrorCode(),
-          ResponseCode.jsonTransformBasicConfigMissing.getErrorMessage(),
-          ResponseCode.SERVER_ERROR.getResponseCode());
-    }
     if (fieldMap.get(TransformationConstants.FROM_FIELD_NAME) instanceof String) {
       fromField = (String) fieldMap.get(TransformationConstants.FROM_FIELD_NAME);
       fieldValue = getValueFromIncomingMap(fromField, userInputMap);
     } else if (fieldMap.get(TransformationConstants.FROM_FIELD_NAME) instanceof List) {
       fromFields = (List<String>) fieldMap.get(TransformationConstants.FROM_FIELD_NAME);
       fieldValue = getValueFromIncomingMap(fromFields, userInputMap);
+    }
+
+    if (StringUtils.isBlank(toField)
+        || StringUtils.isBlank(fromType)
+        || StringUtils.isBlank(toType)) {
+      ProjectLogger.log(
+          "TransformJsonUtil:transformField : Basic Config Fields(toFieldName, fromType, toType) are missing for field "
+              + fromField,
+          LoggerEnum.ERROR.name());
+      throw new ProjectCommonException(
+          ResponseCode.errorJsonTransformBasicConfigMissing.getErrorCode(),
+          ProjectUtil.formatMessage(
+              ResponseCode.errorJsonTransformBasicConfigMissing.getErrorMessage(), fromField),
+          ResponseCode.SERVER_ERROR.getResponseCode());
     }
 
     // Skip the transformation for the field if there is no value to be transformed
@@ -127,14 +131,15 @@ public class TransformJsonUtil {
     if (!fromType.equalsIgnoreCase(toType)
         || fieldMap.containsKey(TransformationConstants.ENUM)
         || fromType.contains(TransformationConstants.DATE_STRING_TYPE)) {
-      if (isCustomListType(fromType) || isCustomListType(toType)) {
+      if (isCustomListType(fromField, fromType) || isCustomListType(fromField, toType)) {
         fieldValue =
             getTransformedFieldValueCustomListType(
-                fromType, fieldValue, fieldsConfig, enumsConfig, operationMode);
+                fromField, fromType, fieldValue, fieldsConfig, enumsConfig, operationMode);
       } else {
         Map<String, String> enumValues =
-            getConfiguredEnumValues(fieldMap, enumsConfig, operationMode);
-        fieldValue = getTransformedFieldValue(fromType, toType, fieldValue, enumValues, fieldMap);
+            getConfiguredEnumValues(fromField, fieldMap, enumsConfig, operationMode);
+        fieldValue =
+            getTransformedFieldValue(fromField, fromType, toType, fieldValue, enumValues, fieldMap);
       }
     }
 
@@ -144,6 +149,7 @@ public class TransformJsonUtil {
   /**
    * Method to call actual transformation methods based on fromType and toType of the field
    *
+   * @param fromField String
    * @param fromType String
    * @param toType String
    * @param fieldValue Object
@@ -152,6 +158,7 @@ public class TransformJsonUtil {
    * @return Object
    */
   private static Object getTransformedFieldValue(
+      String fromField,
       String fromType,
       String toType,
       Object fieldValue,
@@ -159,18 +166,20 @@ public class TransformJsonUtil {
       Map<String, Object> fieldMap) {
 
     if (!isListType(fromType) && !isListType(toType)) {
-      return getTransformedFieldValueSimpleType(fromType, toType, fieldValue, enumValues, fieldMap);
+      return getTransformedFieldValueSimpleType(
+          fromField, fromType, toType, fieldValue, enumValues, fieldMap);
     }
     if (isListType(fromType) && isListType(toType)) {
-      return getTransformedFieldValueListType(fromType, toType, fieldValue, enumValues, fieldMap);
+      return getTransformedFieldValueListType(
+          fromField, fromType, toType, fieldValue, enumValues, fieldMap);
     }
     if (isListType(fromType) && !isListType(toType)) {
       return getTransformedFieldValueListToSimpleType(
-          fromType, toType, fieldValue, enumValues, fieldMap);
+          fromField, fromType, toType, fieldValue, enumValues, fieldMap);
     }
     if (!isListType(fromType) && isListType(toType)) {
       return getTransformedFieldValueSimpleToListType(
-          fromType, toType, fieldValue, enumValues, fieldMap);
+          fromField, fromType, toType, fieldValue, enumValues, fieldMap);
     }
 
     return fieldValue;
@@ -179,6 +188,7 @@ public class TransformJsonUtil {
   /**
    * Method to transform values from simple to list type E.g. String to List<Double>
    *
+   * @param fromField String
    * @param fromType String
    * @param toType String
    * @param fieldValue Object
@@ -187,14 +197,16 @@ public class TransformJsonUtil {
    * @return Object
    */
   private static Object getTransformedFieldValueSimpleToListType(
+      String fromField,
       String fromType,
       String toType,
       Object fieldValue,
       Map<String, String> enumValues,
       Map<String, Object> fieldMap) {
-    String toListType = getListType(toType);
+    String toListType = getListType(fromField, toType);
     Object transformedValue =
-        getTransformedFieldValueSimpleType(fromType, toListType, fieldValue, enumValues, fieldMap);
+        getTransformedFieldValueSimpleType(
+            fromField, fromType, toListType, fieldValue, enumValues, fieldMap);
     List<Object> toList = new ArrayList<Object>();
     toList.add(transformedValue);
     return toList;
@@ -203,6 +215,7 @@ public class TransformJsonUtil {
   /**
    * Method to transform values from list to simple type E.g. List<Integer> to Long
    *
+   * @param fromField String
    * @param fromType String
    * @param toType String
    * @param fieldValue Object
@@ -211,22 +224,24 @@ public class TransformJsonUtil {
    * @return Object
    */
   private static Object getTransformedFieldValueListToSimpleType(
+      String fromField,
       String fromType,
       String toType,
       Object fieldValue,
       Map<String, String> enumValues,
       Map<String, Object> fieldMap) {
-    String fromListType = getListType(fromType);
+    String fromListType = getListType(fromField, fromType);
     List<Object> fromList = (List<Object>) fieldValue;
     Object transformedValue =
         getTransformedFieldValueSimpleType(
-            fromListType, toType, fromList.get(0), enumValues, fieldMap);
+            fromField, fromListType, toType, fromList.get(0), enumValues, fieldMap);
     return transformedValue;
   }
 
   /**
    * Method to transform values of list type E.g. List<Integer> to List<String>
    *
+   * @param fromField String
    * @param fromType String
    * @param toType String
    * @param fieldValue Object
@@ -235,19 +250,20 @@ public class TransformJsonUtil {
    * @return Object
    */
   private static Object getTransformedFieldValueListType(
+      String fromField,
       String fromType,
       String toType,
       Object fieldValue,
       Map<String, String> enumValues,
       Map<String, Object> fieldMap) {
-    String fromListType = getListType(fromType);
-    String toListType = getListType(toType);
+    String fromListType = getListType(fromField, fromType);
+    String toListType = getListType(fromField, toType);
     List<Object> fromList = (List<Object>) fieldValue;
     List<Object> toList = new ArrayList<Object>();
     for (int i = 0; i < fromList.size(); i++) {
       toList.add(
           getTransformedFieldValueSimpleType(
-              fromListType, toListType, fromList.get(i), enumValues, fieldMap));
+              fromField, fromListType, toListType, fromList.get(i), enumValues, fieldMap));
     }
     return toList;
   }
@@ -255,6 +271,7 @@ public class TransformJsonUtil {
   /**
    * Method to transform values of custom list type(list of maps) E.g. List<Custom> to List<T>
    *
+   * @param fromField String
    * @param fromType String
    * @param fieldValue Object
    * @param fieldsConfig Config
@@ -264,14 +281,15 @@ public class TransformJsonUtil {
    * @throws ProjectCommonException
    */
   private static Object getTransformedFieldValueCustomListType(
+      String fromField,
       String fromType,
       Object fieldValue,
       Config fieldsConfig,
       Config enumsConfig,
       String operationMode) {
-    String fromListElementType = getListType(fromType);
+    String fromListElementType = getListType(fromField, fromType);
     List<Map<String, Object>> outputList = new ArrayList<Map<String, Object>>();
-    if (isCustomListType(fromType)) {
+    if (isCustomListType(fromField, fromType)) {
       List<Map<String, Object>> fromValueList = (List<Map<String, Object>>) fieldValue;
       for (Map<String, Object> inputMapFromList : fromValueList) {
         Map<String, Object> outMap = null;
@@ -285,8 +303,9 @@ public class TransformJsonUtil {
           "TransformJsonUtil:getTransformedFieldValueCustomListType : Invalid Custom ListType Configuration. For Custom List Transformation, both FROM and TO types should be of custom type",
           LoggerEnum.ERROR.name());
       throw new ProjectCommonException(
-          ResponseCode.jsonTransformInvalidTypeConfig.getErrorCode(),
-          ResponseCode.jsonTransformInvalidTypeConfig.getErrorMessage(),
+          ResponseCode.errorJsonTransformInvalidTypeConfig.getErrorCode(),
+          ProjectUtil.formatMessage(
+              ResponseCode.errorJsonTransformInvalidTypeConfig.getErrorMessage(), fromField),
           ResponseCode.SERVER_ERROR.getResponseCode());
     }
     return outputList;
@@ -297,6 +316,7 @@ public class TransformJsonUtil {
    * Integer, Boolean, Double, Long, DateString if toType is of unsupported type, fieldValue will be
    * returned without transformation
    *
+   * @param fromField String
    * @param fromType String
    * @param toType String
    * @param fieldValue Object
@@ -305,6 +325,7 @@ public class TransformJsonUtil {
    * @return Object
    */
   private static Object getTransformedFieldValueSimpleType(
+      String fromField,
       String fromType,
       String toType,
       Object fieldValue,
@@ -312,7 +333,7 @@ public class TransformJsonUtil {
       Map<String, Object> fieldMap) {
 
     String value = fieldValue.toString();
-    value = getEnumValue(enumValues, value);
+    value = getEnumValue(fromField, enumValues, value);
 
     switch (toType) {
       case TransformationConstants.STRING_TYPE:
@@ -326,7 +347,7 @@ public class TransformJsonUtil {
       case TransformationConstants.LONG_TYPE:
         return new Long(value);
       case TransformationConstants.DATE_STRING_TYPE:
-        return getTransformedFieldValueDate(value, fieldMap);
+        return getTransformedFieldValueDate(fromField, value, fieldMap);
       default:
         return fieldValue;
     }
@@ -336,12 +357,14 @@ public class TransformJsonUtil {
    * Method to transform dateformat of date fields based on fromDateFormat and toDateFormat
    * configured
    *
+   * @param fromField String
    * @param value String
    * @param fieldMap Map<String, Object>
    * @return String
    * @throws ProjectCommonException
    */
-  private static String getTransformedFieldValueDate(String value, Map<String, Object> fieldMap) {
+  private static String getTransformedFieldValueDate(
+      String fromField, String value, Map<String, Object> fieldMap) {
     String fromDateFormat = (String) fieldMap.get(TransformationConstants.FROM_DATE_FORMAT);
     String toDateFormat = (String) fieldMap.get(TransformationConstants.TO_DATE_FORMAT);
     if (StringUtils.isBlank(fromDateFormat) || StringUtils.isBlank(toDateFormat)) {
@@ -349,8 +372,9 @@ public class TransformJsonUtil {
           "TransformJsonUtil:getTransformedFieldValueDate : fromDateFormat or toDateFormat configuration is missing",
           LoggerEnum.ERROR.name());
       throw new ProjectCommonException(
-          ResponseCode.jsonTransformInvalidDateFormat.getErrorCode(),
-          ResponseCode.jsonTransformInvalidDateFormat.getErrorMessage(),
+          ResponseCode.errorJsonTransformInvalidDateFormat.getErrorCode(),
+          ProjectUtil.formatMessage(
+              ResponseCode.errorJsonTransformInvalidDateFormat.getErrorMessage(), fromField),
           ResponseCode.SERVER_ERROR.getResponseCode());
     }
     SimpleDateFormat sdf1 = new SimpleDateFormat(fromDateFormat);
@@ -364,8 +388,9 @@ public class TransformJsonUtil {
               + value,
           LoggerEnum.ERROR.name());
       throw new ProjectCommonException(
-          ResponseCode.jsonTransformFailedInvalidInput.getErrorCode(),
-          ResponseCode.jsonTransformFailedInvalidInput.getErrorMessage(),
+          ResponseCode.errorJsonTransformInvalidInput.getErrorCode(),
+          ProjectUtil.formatMessage(
+              ResponseCode.errorJsonTransformInvalidInput.getErrorMessage(), fromField),
           ResponseCode.CLIENT_ERROR.getResponseCode());
     }
   }
@@ -374,14 +399,15 @@ public class TransformJsonUtil {
    * Method to determine whether the given type is of CustomList or not returns true, if the given
    * type is of CustomList
    *
+   * @param fromField String
    * @param listType String
    * @return boolean
    */
-  private static boolean isCustomListType(String listType) {
+  private static boolean isCustomListType(String fromField, String listType) {
     if (!isListType(listType)) {
       return false;
     }
-    String type = getListType(listType);
+    String type = getListType(fromField, listType);
     boolean isCustomList = true;
     for (SimpleDataTypes sdt : SimpleDataTypes.values()) {
       if (type.equalsIgnoreCase(sdt.name())) {
@@ -481,12 +507,14 @@ public class TransformJsonUtil {
   /**
    * Method to fetch equivalent enum value for a given value based on the configuration
    *
+   * @param fromField String
    * @param enumValues <String,String>
    * @param inputValue Object
    * @return String
    * @throws ProjectCommonException
    */
-  private static String getEnumValue(Map<String, String> enumValues, String inputValue) {
+  private static String getEnumValue(
+      String fromField, Map<String, String> enumValues, String inputValue) {
     if (null == enumValues) {
       return inputValue;
     }
@@ -500,8 +528,9 @@ public class TransformJsonUtil {
         "TransformJsonUtil:getEnumValue : enum value not configured for " + inputValue,
         LoggerEnum.ERROR.name());
     throw new ProjectCommonException(
-        ResponseCode.jsonTransformEnumValuesMissing.getErrorCode(),
-        ResponseCode.jsonTransformEnumValuesMissing.getErrorMessage(),
+        ResponseCode.errorJsonTransformInvalidEnumInput.getErrorCode(),
+        ProjectUtil.formatMessage(
+            ResponseCode.errorJsonTransformInvalidEnumInput.getErrorMessage(), fromField),
         ResponseCode.SERVER_ERROR.getResponseCode());
   }
 
@@ -509,11 +538,12 @@ public class TransformJsonUtil {
    * Method to fetch listType E.g. Return value will be T, if fieldType is List<T> Throws
    * ProjectCommonException, if listType is not configured
    *
+   * @param fromField String
    * @param fieldType String
    * @return String
    * @throws ProjectCommonException
    */
-  private static String getListType(String fieldType) {
+  private static String getListType(String fromField, String fieldType) {
     Matcher matcher = listTypePattern.matcher(fieldType);
     if (matcher.find()) {
       return matcher.group(1);
@@ -522,8 +552,9 @@ public class TransformJsonUtil {
           "TransformJsonUtil:getListType : Invalid ListType configuration",
           LoggerEnum.ERROR.name());
       throw new ProjectCommonException(
-          ResponseCode.jsonTransformInvalidTypeConfig.getErrorCode(),
-          ResponseCode.jsonTransformInvalidTypeConfig.getErrorMessage(),
+          ResponseCode.errorJsonTransformInvalidTypeConfig.getErrorCode(),
+          ProjectUtil.formatMessage(
+              ResponseCode.errorJsonTransformInvalidTypeConfig.getErrorMessage(), fromField),
           ResponseCode.SERVER_ERROR.getResponseCode());
     }
   }
@@ -532,6 +563,7 @@ public class TransformJsonUtil {
    * Method to fetch configured enum values for a field. Throws ProjectCommonException, if enum key
    * is present and enum values are not configured for a field
    *
+   * @param fromField String
    * @param fieldMap Map<String, Object>
    * @param enumsConfig Config
    * @param operationMode String
@@ -539,7 +571,7 @@ public class TransformJsonUtil {
    * @throws ProjectCommonException
    */
   private static Map<String, String> getConfiguredEnumValues(
-      Map<String, Object> fieldMap, Config enumsConfig, String operationMode) {
+      String fromField, Map<String, Object> fieldMap, Config enumsConfig, String operationMode) {
     Object enumName = fieldMap.get(TransformationConstants.ENUM);
     Map<String, String> enumValues = null;
     if (enumName instanceof String) {
@@ -556,11 +588,13 @@ public class TransformJsonUtil {
               + (String) fieldMap.get(TransformationConstants.TO_FIELD_NAME),
           LoggerEnum.ERROR.name());
       throw new ProjectCommonException(
-          ResponseCode.jsonTransformEnumValuesMissing.getErrorCode(),
-          ResponseCode.jsonTransformEnumValuesMissing.getErrorMessage(),
+          ResponseCode.errorJsonTransformEnumValuesEmpty.getErrorCode(),
+          ProjectUtil.formatMessage(
+              ResponseCode.errorJsonTransformEnumValuesEmpty.getErrorMessage(), fromField),
           ResponseCode.SERVER_ERROR.getResponseCode());
     }
-    if (SunbirdExtensionConstants.OPERATION_MODE_READ.equalsIgnoreCase(operationMode)) {
+    if (null != enumValues
+        && SunbirdExtensionConstants.OPERATION_MODE_READ.equalsIgnoreCase(operationMode)) {
       HashBiMap<String, String> biMap = HashBiMap.create(enumValues);
       enumValues = biMap.inverse();
     }
