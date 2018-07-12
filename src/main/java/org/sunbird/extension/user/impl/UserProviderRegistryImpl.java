@@ -11,7 +11,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.HttpHeaders;
@@ -73,15 +72,13 @@ public class UserProviderRegistryImpl implements UserExtension {
 
     // hardcoded to teacher till userType enhancement is done
     userProfileMap.put(SunbirdExtensionConstants.USER_TYPE, "teacher");
-    userProfileMap.put(SunbirdExtensionConstants.X_AUTHENTICATED_USER_TOKEN, "accessToken");
 
     updateUser(userProfileMap);
   }
 
   @Override
   public void delete(Map<String, Object> userProfileMap) {
-    // TODO Auto-generated method stub
-
+    // to be implemented
   }
 
   private Map<String, String> getHeader(String accessToken) {
@@ -197,7 +194,7 @@ public class UserProviderRegistryImpl implements UserExtension {
 
     if (SunbirdExtensionConstants.STATUS_SUCCESS.equalsIgnoreCase(
         (String) paramsMap.get(SunbirdExtensionConstants.STATUS))) {
-
+      // do nothing if update is successful
     } else {
       String errMsg = (String) paramsMap.get(SunbirdExtensionConstants.ERR_MSG);
       ProjectLogger.log(
@@ -217,7 +214,6 @@ public class UserProviderRegistryImpl implements UserExtension {
             userType,
             userEnumsConfig,
             SunbirdExtensionConstants.OPERATION_MODE_WRITE);
-    setMainProviderId(userMap);
     return userMap;
   }
 
@@ -234,32 +230,6 @@ public class UserProviderRegistryImpl implements UserExtension {
           ResponseCode.CLIENT_ERROR.getResponseCode());
     }
     return userType;
-  }
-
-  private void setMainProviderId(Map<String, Object> userMap) {
-
-    String mainProvider =
-        userWriteConfig.getString(SunbirdExtensionConstants.SUNBIRD_MAIN_PROVIDER);
-    if (StringUtils.isBlank(mainProvider)) {
-      ProjectLogger.log(
-          "UserProviderRegistryImpl:setMainProviderId : User Registry - Main Provider is not configured",
-          LoggerEnum.ERROR.name());
-      throw new ProjectCommonException(
-          ResponseCode.errorUserRegistryMainProviderNotConfigured.getErrorCode(),
-          ResponseCode.errorUserRegistryMainProviderNotConfigured.getErrorMessage(),
-          ResponseCode.SERVER_ERROR.getResponseCode());
-    }
-    List<Map> externalIds = (List<Map>) userMap.get(SunbirdExtensionConstants.EXTERNAL_IDS);
-    if (null != externalIds) {
-      for (Map externalIdDetails : externalIds) {
-        if (mainProvider.equalsIgnoreCase(
-            (String) externalIdDetails.get(SunbirdExtensionConstants.PROVIDER))) {
-          userMap.put(
-              SunbirdExtensionConstants.USER_ID,
-              externalIdDetails.get(SunbirdExtensionConstants.ID));
-        }
-      }
-    }
   }
 
   private Map<String, Object> getResponseMap(ResponseData<String> responseData) {
@@ -317,6 +287,7 @@ public class UserProviderRegistryImpl implements UserExtension {
         ResponseCode.SERVER_ERROR.getResponseCode());
   }
 
+  @SuppressWarnings("unused")
   private void throwUserRegistryDeleteEntityException() {
     throw new ProjectCommonException(
         ResponseCode.errorUserRegistryDeleteEntity.getErrorCode(),

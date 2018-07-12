@@ -18,7 +18,6 @@ public final class SunbirdExtensionConstants {
   public static final String USER_ENUMS_MAPPING_FILE = "sunbird-registry-enums-mapping.conf";
   public static final String CONTENT_TYPE = "Content-Type";
   public static final String X_AUTHENTICATED_USER_TOKEN = "x-authenticated-user-token";
-  public static final String SUNBIRD_MAIN_PROVIDER = "sunbird_user_teacher_id_provider";
   public static final String EXTERNAL_IDS = "externalIds";
   public static final String PROVIDER = "provider";
   public static final String USER_ID = "teacherId";

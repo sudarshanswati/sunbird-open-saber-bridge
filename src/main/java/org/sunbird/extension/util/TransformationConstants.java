@@ -20,6 +20,10 @@ public final class TransformationConstants {
   public static final String SINGLE_SPACE = " ";
   public static final String FROM_DATE_FORMAT = "fromDateFormat";
   public static final String TO_DATE_FORMAT = "toDateFormat";
+  public static final String FILTERS = "filters";
+  public static final String FIELD = "field";
+  public static final String VALUES = "values";
+  public static final String FILTER_FIELD = "filterField";
 
   private TransformationConstants() {}
 }

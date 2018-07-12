@@ -230,12 +230,16 @@ public class TransformJsonUtil {
       Object fieldValue,
       Map<String, String> enumValues,
       Map<String, Object> fieldMap) {
+    Object fromValue = null;
     String fromListType = getListType(fromField, fromType);
-    List<Object> fromList = (List<Object>) fieldValue;
-    Object transformedValue =
-        getTransformedFieldValueSimpleType(
-            fromField, fromListType, toType, fromList.get(0), enumValues, fieldMap);
-    return transformedValue;
+    if (isCustomListType(fromField, fromType)) {
+      fromValue = filterValue(fromField, fieldMap, fieldValue);
+    } else {
+      List<Object> fromList = (List<Object>) fieldValue;
+      fromValue = fromList.get(0);
+    }
+    return getTransformedFieldValueSimpleType(
+        fromField, fromListType, toType, fromValue, enumValues, fieldMap);
   }
 
   /**
@@ -379,20 +383,18 @@ public class TransformJsonUtil {
     }
     SimpleDateFormat sdf1 = new SimpleDateFormat(fromDateFormat);
     SimpleDateFormat sdf2 = new SimpleDateFormat(toDateFormat);
+    String transformedValue = null;
     try {
       java.util.Date date = sdf1.parse(value);
-      return sdf2.format(date);
+      transformedValue = sdf2.format(date);
     } catch (ParseException e) {
       ProjectLogger.log(
           "TransformJsonUtil:getTransformedFieldValueDate : Invalid value for date transformation - "
               + value,
           LoggerEnum.ERROR.name());
-      throw new ProjectCommonException(
-          ResponseCode.errorJsonTransformInvalidInput.getErrorCode(),
-          ProjectUtil.formatMessage(
-              ResponseCode.errorJsonTransformInvalidInput.getErrorMessage(), fromField),
-          ResponseCode.CLIENT_ERROR.getResponseCode());
+      throwErrorJsonTransformInvalidInput(fromField);
     }
+    return transformedValue;
   }
 
   /**
@@ -623,5 +625,74 @@ public class TransformJsonUtil {
       }
     }
     return false;
+  }
+
+  private static Object filterValue(
+      String fromField, Map<String, Object> fieldMap, Object fieldValue) {
+    List<Map<String, Object>> filters = null;
+    String filterField = null;
+    Object filteredValue = null;
+    try {
+      filters = (List<Map<String, Object>>) fieldMap.get(TransformationConstants.FILTERS);
+      filterField = (String) fieldMap.get(TransformationConstants.FILTER_FIELD);
+    } catch (Exception e) {
+      throwErrorJsonTransformInvalidFilterConfig(fromField);
+    }
+    if (null == filters || filters.isEmpty() || StringUtils.isBlank(filterField)) {
+      throwErrorJsonTransformInvalidFilterConfig(fromField);
+    }
+
+    List<Map<String, Object>> fromValueList = (List<Map<String, Object>>) fieldValue;
+    if (null == fromValueList || fromValueList.isEmpty()) {
+      throwErrorJsonTransformInvalidInput(fromField);
+    }
+
+    for (Map<String, Object> filter : filters) {
+      fromValueList = applyFilter(fromField, filter, fromValueList);
+    }
+    if (!fromValueList.isEmpty()) {
+      filteredValue = fromValueList.get(0).get(filterField);
+    }
+
+    return filteredValue;
+  }
+
+  private static List<Map<String, Object>> applyFilter(
+      String fromField, Map<String, Object> filter, List<Map<String, Object>> fieldValues) {
+
+    List<Map<String, Object>> filteredList = new ArrayList<Map<String, Object>>();
+
+    String configuredField = (String) filter.get(TransformationConstants.FIELD);
+    List<String> configuredValues = (List<String>) filter.get(TransformationConstants.VALUES);
+    if (null == configuredValues
+        || configuredValues.isEmpty()
+        || StringUtils.isBlank(configuredField)) {
+      throwErrorJsonTransformInvalidFilterConfig(fromField);
+    }
+
+    for (Map<String, Object> fieldValue : fieldValues) {
+      Object value = fieldValue.get(configuredField);
+      if (configuredValues.contains(value)) {
+        filteredList.add(fieldValue);
+      }
+    }
+
+    return filteredList;
+  }
+
+  private static void throwErrorJsonTransformInvalidFilterConfig(String fromField) {
+    throw new ProjectCommonException(
+        ResponseCode.errorJsonTransformInvalidFilterConfig.getErrorCode(),
+        ProjectUtil.formatMessage(
+            ResponseCode.errorJsonTransformInvalidFilterConfig.getErrorMessage(), fromField),
+        ResponseCode.SERVER_ERROR.getResponseCode());
+  }
+
+  private static void throwErrorJsonTransformInvalidInput(String fromField) {
+    throw new ProjectCommonException(
+        ResponseCode.errorJsonTransformInvalidInput.getErrorCode(),
+        ProjectUtil.formatMessage(
+            ResponseCode.errorJsonTransformInvalidInput.getErrorMessage(), fromField),
+        ResponseCode.CLIENT_ERROR.getResponseCode());
   }
 }
