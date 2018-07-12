@@ -131,7 +131,7 @@ public class TransformJsonUtil {
     if (!fromType.equalsIgnoreCase(toType)
         || fieldMap.containsKey(TransformationConstants.ENUM)
         || fromType.contains(TransformationConstants.DATE_STRING_TYPE)) {
-      if (isCustomListType(fromField, fromType) || isCustomListType(fromField, toType)) {
+      if (isCustomListType(fromField, fromType) && isCustomListType(fromField, toType)) {
         fieldValue =
             getTransformedFieldValueCustomListType(
                 fromField, fromType, fieldValue, fieldsConfig, enumsConfig, operationMode);
