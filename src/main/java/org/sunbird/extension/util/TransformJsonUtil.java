@@ -63,7 +63,7 @@ public class TransformJsonUtil {
             "TransformJsonUtil:transform : "
                 + key
                 + " field not found in config file "
-                + fieldsConfig.origin(),
+                + fieldsConfig.origin().filename(),
             LoggerEnum.INFO.name());
       }
     }
@@ -143,6 +143,9 @@ public class TransformJsonUtil {
       }
     }
 
+    if (null == fieldValue) {
+      return;
+    }
     putValueIntoOutgoingMap(toField, toType, fieldValue, outputMap);
   }
 
@@ -336,6 +339,9 @@ public class TransformJsonUtil {
       Map<String, String> enumValues,
       Map<String, Object> fieldMap) {
 
+    if (null == fieldValue) {
+      return null;
+    }
     String value = fieldValue.toString();
     value = getEnumValue(fromField, enumValues, value);
 
