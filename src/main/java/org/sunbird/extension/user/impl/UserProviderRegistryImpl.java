@@ -12,9 +12,9 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
+import javax.ws.rs.core.MediaType;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.HttpHeaders;
-import org.springframework.http.MediaType;
 import org.sunbird.common.exception.ProjectCommonException;
 import org.sunbird.common.models.util.LoggerEnum;
 import org.sunbird.common.models.util.ProjectLogger;
@@ -83,7 +83,7 @@ public class UserProviderRegistryImpl implements UserExtension {
 
   private Map<String, String> getHeader(String accessToken) {
     Map<String, String> headers = new HashMap<>();
-    headers.put(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
+    headers.put(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON);
     headers.put(SunbirdExtensionConstants.X_AUTHENTICATED_USER_TOKEN, accessToken);
     return headers;
   }
