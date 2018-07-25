@@ -33,19 +33,20 @@ public class TransformJsonUtil {
    * All fields available in userInputMap that are configured in config as well, will be transformed
    * according to the configuration and returned as a map
    *
-   * @param fieldsConfig Config
-   * @param userInputMap Map<String, Object>
-   * @param rootConfig String
-   * @param enumsConfig Config
-   * @param operationMode String
-   * @return Map<String, Object>
+   * @param fieldsConfig Field Configurations for the transformation
+   * @param userInputMap Map to be transformed
+   * @param rootConfig Root Configuration field in the field configurations
+   * @param enumsConfig Enums Configuration for the transformation
+   * @param operationMode OperationMode Read/Write
+   * @return Transformed Map
    */
   public static Map<String, Object> transform(
       Config fieldsConfig,
       Map<String, Object> userInputMap,
       String rootConfig,
       Config enumsConfig,
-      String operationMode) {
+      String operationMode,
+      String fieldsConfigFile) {
 
     Map<String, Object> outputMap = new HashMap<String, Object>();
     Set<String> userInputSet = userInputMap.keySet();
@@ -57,13 +58,20 @@ public class TransformJsonUtil {
         if (!fieldMap.containsKey(TransformationConstants.FROM_FIELD_NAME)) {
           fieldMap.put(TransformationConstants.FROM_FIELD_NAME, key);
         }
-        transformField(fieldMap, userInputMap, outputMap, fieldsConfig, enumsConfig, operationMode);
+        transformField(
+            fieldMap,
+            userInputMap,
+            outputMap,
+            fieldsConfig,
+            enumsConfig,
+            operationMode,
+            fieldsConfigFile);
       } catch (ConfigException e) {
         ProjectLogger.log(
             "TransformJsonUtil:transform : "
                 + key
                 + " field not found in config file "
-                + fieldsConfig.origin().filename(),
+                + fieldsConfigFile,
             LoggerEnum.INFO.name());
       }
     }
@@ -71,25 +79,14 @@ public class TransformJsonUtil {
     return outputMap;
   }
 
-  /**
-   * Based on fieldMap configuration, value will be retrieved from userInputMap, transformed and set
-   * into the outputMap
-   *
-   * @param fieldMap Map<String, Object>
-   * @param userInputMap Map<String, Object>
-   * @param outputMap Map<String, Object>
-   * @param fieldsConfig Config
-   * @param enumsConfig Config
-   * @param operationMode String
-   * @throws ProjectCommonException
-   */
   private static void transformField(
       Map<String, Object> fieldMap,
       Map<String, Object> userInputMap,
       Map<String, Object> outputMap,
       Config fieldsConfig,
       Config enumsConfig,
-      String operationMode) {
+      String operationMode,
+      String fieldsConfigFile) {
 
     Object fieldValue = null;
     String fromField = null;
@@ -116,11 +113,10 @@ public class TransformJsonUtil {
           "TransformJsonUtil:transformField : Basic Config Fields(toFieldName, fromType, toType) are missing for field "
               + fromField,
           LoggerEnum.ERROR.name());
-      throw new ProjectCommonException(
-          ResponseCode.errorJsonTransformBasicConfigMissing.getErrorCode(),
+      ProjectCommonException.throwServerErrorException(
+          ResponseCode.errorJsonTransformBasicConfigMissing,
           ProjectUtil.formatMessage(
-              ResponseCode.errorJsonTransformBasicConfigMissing.getErrorMessage(), fromField),
-          ResponseCode.SERVER_ERROR.getResponseCode());
+              ResponseCode.errorJsonTransformBasicConfigMissing.getErrorMessage(), fromField));
     }
 
     // Skip the transformation for the field if there is no value to be transformed
@@ -134,7 +130,13 @@ public class TransformJsonUtil {
       if (isCustomListType(fromField, fromType) && isCustomListType(fromField, toType)) {
         fieldValue =
             getTransformedFieldValueCustomListType(
-                fromField, fromType, fieldValue, fieldsConfig, enumsConfig, operationMode);
+                fromField,
+                fromType,
+                fieldValue,
+                fieldsConfig,
+                enumsConfig,
+                operationMode,
+                fieldsConfigFile);
       } else {
         Map<String, String> enumValues =
             getConfiguredEnumValues(fromField, fieldMap, enumsConfig, operationMode);
@@ -149,17 +151,6 @@ public class TransformJsonUtil {
     putValueIntoOutgoingMap(toField, toType, fieldValue, outputMap);
   }
 
-  /**
-   * Method to call actual transformation methods based on fromType and toType of the field
-   *
-   * @param fromField String
-   * @param fromType String
-   * @param toType String
-   * @param fieldValue Object
-   * @param enumValues Map<String, String>
-   * @param fieldMap Map<String, Object>
-   * @return Object
-   */
   private static Object getTransformedFieldValue(
       String fromField,
       String fromType,
@@ -188,17 +179,6 @@ public class TransformJsonUtil {
     return fieldValue;
   }
 
-  /**
-   * Method to transform values from simple to list type E.g. String to List<Double>
-   *
-   * @param fromField String
-   * @param fromType String
-   * @param toType String
-   * @param fieldValue Object
-   * @param enumValues Map<String, String>
-   * @param fieldMap Map<String, Object>
-   * @return Object
-   */
   private static Object getTransformedFieldValueSimpleToListType(
       String fromField,
       String fromType,
@@ -215,17 +195,6 @@ public class TransformJsonUtil {
     return toList;
   }
 
-  /**
-   * Method to transform values from list to simple type E.g. List<Integer> to Long
-   *
-   * @param fromField String
-   * @param fromType String
-   * @param toType String
-   * @param fieldValue Object
-   * @param enumValues Map<String, String>
-   * @param fieldMap Map<String, Object>
-   * @return Object
-   */
   private static Object getTransformedFieldValueListToSimpleType(
       String fromField,
       String fromType,
@@ -245,17 +214,6 @@ public class TransformJsonUtil {
         fromField, fromListType, toType, fromValue, enumValues, fieldMap);
   }
 
-  /**
-   * Method to transform values of list type E.g. List<Integer> to List<String>
-   *
-   * @param fromField String
-   * @param fromType String
-   * @param toType String
-   * @param fieldValue Object
-   * @param enumValues Map<String, String>
-   * @param fieldMap Map<String, Object>
-   * @return Object
-   */
   private static Object getTransformedFieldValueListType(
       String fromField,
       String fromType,
@@ -275,25 +233,14 @@ public class TransformJsonUtil {
     return toList;
   }
 
-  /**
-   * Method to transform values of custom list type(list of maps) E.g. List<Custom> to List<T>
-   *
-   * @param fromField String
-   * @param fromType String
-   * @param fieldValue Object
-   * @param fieldsConfig Config
-   * @param enumsConfig Config
-   * @param operationMode String
-   * @return Object
-   * @throws ProjectCommonException
-   */
   private static Object getTransformedFieldValueCustomListType(
       String fromField,
       String fromType,
       Object fieldValue,
       Config fieldsConfig,
       Config enumsConfig,
-      String operationMode) {
+      String operationMode,
+      String fieldsConfigFile) {
     String fromListElementType = getListType(fromField, fromType);
     List<Map<String, Object>> outputList = new ArrayList<Map<String, Object>>();
     if (isCustomListType(fromField, fromType)) {
@@ -302,35 +249,26 @@ public class TransformJsonUtil {
         Map<String, Object> outMap = null;
         outMap =
             transform(
-                fieldsConfig, inputMapFromList, fromListElementType, enumsConfig, operationMode);
+                fieldsConfig,
+                inputMapFromList,
+                fromListElementType,
+                enumsConfig,
+                operationMode,
+                fieldsConfigFile);
         outputList.add(outMap);
       }
     } else {
       ProjectLogger.log(
           "TransformJsonUtil:getTransformedFieldValueCustomListType : Invalid Custom ListType Configuration. For Custom List Transformation, both FROM and TO types should be of custom type",
           LoggerEnum.ERROR.name());
-      throw new ProjectCommonException(
-          ResponseCode.errorJsonTransformInvalidTypeConfig.getErrorCode(),
+      ProjectCommonException.throwServerErrorException(
+          ResponseCode.errorJsonTransformInvalidTypeConfig,
           ProjectUtil.formatMessage(
-              ResponseCode.errorJsonTransformInvalidTypeConfig.getErrorMessage(), fromField),
-          ResponseCode.SERVER_ERROR.getResponseCode());
+              ResponseCode.errorJsonTransformInvalidTypeConfig.getErrorMessage(), fromField));
     }
     return outputList;
   }
 
-  /**
-   * Method to transform type of fieldValue from fromType to toType Supported types are String,
-   * Integer, Boolean, Double, Long, DateString if toType is of unsupported type, fieldValue will be
-   * returned without transformation
-   *
-   * @param fromField String
-   * @param fromType String
-   * @param toType String
-   * @param fieldValue Object
-   * @param enumValues Map<String, String>
-   * @param fieldMap Map<String, Object>
-   * @return Object
-   */
   private static Object getTransformedFieldValueSimpleType(
       String fromField,
       String fromType,
@@ -363,16 +301,6 @@ public class TransformJsonUtil {
     }
   }
 
-  /**
-   * Method to transform dateformat of date fields based on fromDateFormat and toDateFormat
-   * configured
-   *
-   * @param fromField String
-   * @param value String
-   * @param fieldMap Map<String, Object>
-   * @return String
-   * @throws ProjectCommonException
-   */
   private static String getTransformedFieldValueDate(
       String fromField, String value, Map<String, Object> fieldMap) {
     String fromDateFormat = (String) fieldMap.get(TransformationConstants.FROM_DATE_FORMAT);
@@ -381,11 +309,10 @@ public class TransformJsonUtil {
       ProjectLogger.log(
           "TransformJsonUtil:getTransformedFieldValueDate : fromDateFormat or toDateFormat configuration is missing",
           LoggerEnum.ERROR.name());
-      throw new ProjectCommonException(
-          ResponseCode.errorJsonTransformInvalidDateFormat.getErrorCode(),
+      ProjectCommonException.throwServerErrorException(
+          ResponseCode.errorJsonTransformInvalidDateFormat,
           ProjectUtil.formatMessage(
-              ResponseCode.errorJsonTransformInvalidDateFormat.getErrorMessage(), fromField),
-          ResponseCode.SERVER_ERROR.getResponseCode());
+              ResponseCode.errorJsonTransformInvalidDateFormat.getErrorMessage(), fromField));
     }
     SimpleDateFormat sdf1 = new SimpleDateFormat(fromDateFormat);
     SimpleDateFormat sdf2 = new SimpleDateFormat(toDateFormat);
@@ -398,19 +325,14 @@ public class TransformJsonUtil {
           "TransformJsonUtil:getTransformedFieldValueDate : Invalid value for date transformation - "
               + value,
           LoggerEnum.ERROR.name());
-      throwErrorJsonTransformInvalidInput(fromField);
+      ProjectCommonException.throwClientErrorException(
+          ResponseCode.errorJsonTransformInvalidInput,
+          ProjectUtil.formatMessage(
+              ResponseCode.errorJsonTransformInvalidInput.getErrorMessage(), fromField));
     }
     return transformedValue;
   }
 
-  /**
-   * Method to determine whether the given type is of CustomList or not returns true, if the given
-   * type is of CustomList
-   *
-   * @param fromField String
-   * @param listType String
-   * @return boolean
-   */
   private static boolean isCustomListType(String fromField, String listType) {
     if (!isListType(listType)) {
       return false;
@@ -426,13 +348,6 @@ public class TransformJsonUtil {
     return isCustomList;
   }
 
-  /**
-   * Method to determine whether the given type is of List or not returns true, if the given type is
-   * of List
-   *
-   * @param type String
-   * @return boolean
-   */
   private static boolean isListType(String type) {
     if (type.contains(TransformationConstants.LIST)) {
       return true;
@@ -440,15 +355,6 @@ public class TransformJsonUtil {
     return false;
   }
 
-  /**
-   * Fromfields should be of String Type This method fetches the value to be processed from the
-   * incoming map based on fromFields. Multiple values will be concatenated(separated by space) into
-   * a single value.
-   *
-   * @param fromFields List<String>
-   * @param inputMap Map<String, Object>
-   * @return Object
-   */
   private static Object getValueFromIncomingMap(
       List<String> fromFields, Map<String, Object> inputMap) {
 
@@ -467,13 +373,6 @@ public class TransformJsonUtil {
     return value.trim();
   }
 
-  /**
-   * Method to fetch the value to be processed from the incoming map based on fromField
-   *
-   * @param fromField String
-   * @param inputMap Map<String, Object>
-   * @return Object
-   */
   private static Object getValueFromIncomingMap(String fromField, Map<String, Object> inputMap) {
 
     String[] fromFieldHierarchy = fromField.split(TransformationConstants.DOT_REGEX);
@@ -484,14 +383,6 @@ public class TransformJsonUtil {
     return map.get(fromFieldHierarchy[fromFieldHierarchy.length - 1]);
   }
 
-  /**
-   * Iterates through toField tree and sets the value in the appropriate field of outgoing map
-   *
-   * @param toField String
-   * @param toType String
-   * @param value Object
-   * @param outputMap Map<String, Object>
-   */
   private static void putValueIntoOutgoingMap(
       String toField, String toType, Object value, Map<String, Object> outputMap) {
 
@@ -512,15 +403,6 @@ public class TransformJsonUtil {
     }
   }
 
-  /**
-   * Method to fetch equivalent enum value for a given value based on the configuration
-   *
-   * @param fromField String
-   * @param enumValues <String,String>
-   * @param inputValue Object
-   * @return String
-   * @throws ProjectCommonException
-   */
   private static String getEnumValue(
       String fromField, Map<String, String> enumValues, String inputValue) {
     if (null == enumValues) {
@@ -535,49 +417,30 @@ public class TransformJsonUtil {
     ProjectLogger.log(
         "TransformJsonUtil:getEnumValue : enum value not configured for " + inputValue,
         LoggerEnum.ERROR.name());
-    throw new ProjectCommonException(
-        ResponseCode.errorJsonTransformInvalidEnumInput.getErrorCode(),
+    ProjectCommonException.throwServerErrorException(
+        ResponseCode.errorJsonTransformInvalidEnumInput,
         ProjectUtil.formatMessage(
-            ResponseCode.errorJsonTransformInvalidEnumInput.getErrorMessage(), fromField),
-        ResponseCode.SERVER_ERROR.getResponseCode());
+            ResponseCode.errorJsonTransformInvalidEnumInput.getErrorMessage(), fromField));
+    return inputValue;
   }
 
-  /**
-   * Method to fetch listType E.g. Return value will be T, if fieldType is List<T> Throws
-   * ProjectCommonException, if listType is not configured
-   *
-   * @param fromField String
-   * @param fieldType String
-   * @return String
-   * @throws ProjectCommonException
-   */
   private static String getListType(String fromField, String fieldType) {
     Matcher matcher = listTypePattern.matcher(fieldType);
+    String listType = null;
     if (matcher.find()) {
-      return matcher.group(1);
+      listType = matcher.group(1);
     } else {
       ProjectLogger.log(
           "TransformJsonUtil:getListType : Invalid ListType configuration",
           LoggerEnum.ERROR.name());
-      throw new ProjectCommonException(
-          ResponseCode.errorJsonTransformInvalidTypeConfig.getErrorCode(),
+      ProjectCommonException.throwServerErrorException(
+          ResponseCode.errorJsonTransformInvalidTypeConfig,
           ProjectUtil.formatMessage(
-              ResponseCode.errorJsonTransformInvalidTypeConfig.getErrorMessage(), fromField),
-          ResponseCode.SERVER_ERROR.getResponseCode());
+              ResponseCode.errorJsonTransformInvalidTypeConfig.getErrorMessage(), fromField));
     }
+    return listType;
   }
 
-  /**
-   * Method to fetch configured enum values for a field. Throws ProjectCommonException, if enum key
-   * is present and enum values are not configured for a field
-   *
-   * @param fromField String
-   * @param fieldMap Map<String, Object>
-   * @param enumsConfig Config
-   * @param operationMode String
-   * @return Map<String, String>
-   * @throws ProjectCommonException
-   */
   private static Map<String, String> getConfiguredEnumValues(
       String fromField, Map<String, Object> fieldMap, Config enumsConfig, String operationMode) {
     Object enumName = fieldMap.get(TransformationConstants.ENUM);
@@ -595,11 +458,10 @@ public class TransformJsonUtil {
           "TransformJsonUtil:getConfiguredEnumValues : enum values missing in the configuration for field "
               + (String) fieldMap.get(TransformationConstants.TO_FIELD_NAME),
           LoggerEnum.ERROR.name());
-      throw new ProjectCommonException(
-          ResponseCode.errorJsonTransformEnumValuesEmpty.getErrorCode(),
+      ProjectCommonException.throwServerErrorException(
+          ResponseCode.errorJsonTransformEnumValuesEmpty,
           ProjectUtil.formatMessage(
-              ResponseCode.errorJsonTransformEnumValuesEmpty.getErrorMessage(), fromField),
-          ResponseCode.SERVER_ERROR.getResponseCode());
+              ResponseCode.errorJsonTransformEnumValuesEmpty.getErrorMessage(), fromField));
     }
     if (null != enumValues
         && SunbirdExtensionConstants.OPERATION_MODE_READ.equalsIgnoreCase(operationMode)) {
@@ -609,13 +471,6 @@ public class TransformJsonUtil {
     return enumValues;
   }
 
-  /**
-   * Method to determine whether to skip transformation for a field Returns true, if there's no
-   * value to transform
-   *
-   * @param fieldValue Object
-   * @return boolean
-   */
   private static boolean skipTransformationForField(Object fieldValue) {
     if (null == fieldValue) {
       return true;
@@ -642,15 +497,24 @@ public class TransformJsonUtil {
       filters = (List<Map<String, Object>>) fieldMap.get(TransformationConstants.FILTERS);
       filterField = (String) fieldMap.get(TransformationConstants.FILTER_FIELD);
     } catch (Exception e) {
-      throwErrorJsonTransformInvalidFilterConfig(fromField);
+      ProjectCommonException.throwServerErrorException(
+          ResponseCode.errorJsonTransformInvalidFilterConfig,
+          ProjectUtil.formatMessage(
+              ResponseCode.errorJsonTransformInvalidFilterConfig.getErrorMessage(), fromField));
     }
     if (null == filters || filters.isEmpty() || StringUtils.isBlank(filterField)) {
-      throwErrorJsonTransformInvalidFilterConfig(fromField);
+      ProjectCommonException.throwServerErrorException(
+          ResponseCode.errorJsonTransformInvalidFilterConfig,
+          ProjectUtil.formatMessage(
+              ResponseCode.errorJsonTransformInvalidFilterConfig.getErrorMessage(), fromField));
     }
 
     List<Map<String, Object>> fromValueList = (List<Map<String, Object>>) fieldValue;
     if (null == fromValueList || fromValueList.isEmpty()) {
-      throwErrorJsonTransformInvalidInput(fromField);
+      ProjectCommonException.throwClientErrorException(
+          ResponseCode.errorJsonTransformInvalidInput,
+          ProjectUtil.formatMessage(
+              ResponseCode.errorJsonTransformInvalidInput.getErrorMessage(), fromField));
     }
 
     for (Map<String, Object> filter : filters) {
@@ -673,7 +537,10 @@ public class TransformJsonUtil {
     if (null == configuredValues
         || configuredValues.isEmpty()
         || StringUtils.isBlank(configuredField)) {
-      throwErrorJsonTransformInvalidFilterConfig(fromField);
+      ProjectCommonException.throwServerErrorException(
+          ResponseCode.errorJsonTransformInvalidFilterConfig,
+          ProjectUtil.formatMessage(
+              ResponseCode.errorJsonTransformInvalidFilterConfig.getErrorMessage(), fromField));
     }
 
     for (Map<String, Object> fieldValue : fieldValues) {
@@ -684,21 +551,5 @@ public class TransformJsonUtil {
     }
 
     return filteredList;
-  }
-
-  private static void throwErrorJsonTransformInvalidFilterConfig(String fromField) {
-    throw new ProjectCommonException(
-        ResponseCode.errorJsonTransformInvalidFilterConfig.getErrorCode(),
-        ProjectUtil.formatMessage(
-            ResponseCode.errorJsonTransformInvalidFilterConfig.getErrorMessage(), fromField),
-        ResponseCode.SERVER_ERROR.getResponseCode());
-  }
-
-  private static void throwErrorJsonTransformInvalidInput(String fromField) {
-    throw new ProjectCommonException(
-        ResponseCode.errorJsonTransformInvalidInput.getErrorCode(),
-        ProjectUtil.formatMessage(
-            ResponseCode.errorJsonTransformInvalidInput.getErrorMessage(), fromField),
-        ResponseCode.CLIENT_ERROR.getResponseCode());
   }
 }
