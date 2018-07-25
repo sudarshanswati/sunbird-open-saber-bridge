@@ -1,6 +1,5 @@
 package org.sunbird.extension.user.impl;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.typesafe.config.Config;
 import io.opensaber.registry.client.OpensaberClient;
@@ -98,7 +97,7 @@ public class UserProviderRegistryImpl implements UserExtension {
       responseData =
           client.addEntity(
               new RequestData<>(mapper.writeValueAsString(userMap)), getHeader(accessToken));
-    } catch (JsonProcessingException | TransformationException e) {
+    } catch (TransformationException | IOException | URISyntaxException e) {
       ProjectLogger.log(
           "UserProviderRegistryImpl:addUser : User Registry Add Entity failed ==> "
               + e.getStackTrace(),
@@ -133,7 +132,7 @@ public class UserProviderRegistryImpl implements UserExtension {
 
     try {
       responseData = client.readEntity(new URI(registryId), getHeader(accessToken));
-    } catch (TransformationException | URISyntaxException e) {
+    } catch (TransformationException | IOException | URISyntaxException e) {
       ProjectLogger.log(
           "UserProviderRegistryImpl:readUser : User Registry Read Entity failed ==> "
               + e.getStackTrace(),
@@ -180,7 +179,7 @@ public class UserProviderRegistryImpl implements UserExtension {
       responseData =
           client.updateEntity(
               new RequestData<>(mapper.writeValueAsString(userMap)), getHeader(accessToken));
-    } catch (JsonProcessingException | TransformationException e) {
+    } catch (TransformationException | IOException | URISyntaxException e) {
       ProjectLogger.log(
           "UserProviderRegistryImpl:updateUser : User Registry Update Entity failed ==> "
               + e.getStackTrace(),
