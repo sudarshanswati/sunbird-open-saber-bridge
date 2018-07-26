@@ -146,10 +146,8 @@ public class OpensaberClientUtil {
     Map<String, Object> paramsMap =
         (Map<String, Object>) responseMap.get(SunbirdExtensionConstants.PARAMS);
 
-    if (SunbirdExtensionConstants.STATUS_SUCCESS.equalsIgnoreCase(
+    if (!SunbirdExtensionConstants.STATUS_SUCCESS.equalsIgnoreCase(
         (String) paramsMap.get(SunbirdExtensionConstants.STATUS))) {
-      // do nothing if update is successful
-    } else {
       String errMsg = (String) paramsMap.get(SunbirdExtensionConstants.ERR_MSG);
       ProjectLogger.log(
           "OpensaberClientUtil:updateEntity: Registry client update entity returned failure status = "
@@ -180,10 +178,8 @@ public class OpensaberClientUtil {
     Map<String, Object> paramsMap =
         (Map<String, Object>) responseMap.get(SunbirdExtensionConstants.PARAMS);
 
-    if (SunbirdExtensionConstants.STATUS_SUCCESS.equalsIgnoreCase(
+    if (!SunbirdExtensionConstants.STATUS_SUCCESS.equalsIgnoreCase(
         (String) paramsMap.get(SunbirdExtensionConstants.STATUS))) {
-      // do nothing if delete is successful
-    } else {
       String errMsg = (String) paramsMap.get(SunbirdExtensionConstants.ERR_MSG);
       ProjectLogger.log(
           "OpensaberClientUtil:deleteEntity: Registry client delete entity returned failure status = "
