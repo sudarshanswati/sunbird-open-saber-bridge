@@ -45,7 +45,6 @@ public class UserProviderRegistryImpl implements UserExtension {
 
   @Override
   public Map<String, Object> read(Map<String, Object> userIdMap) {
-    setDefaultUserType(userIdMap);
     setDefaultUserAccessToken(userIdMap);
     return readUser(userIdMap);
   }
@@ -75,6 +74,7 @@ public class UserProviderRegistryImpl implements UserExtension {
     String registryId = getRegistryId(userIdMap);
     Map<String, Object> resultMap = OpensaberClientUtil.readEntity(registryId, accessToken);
 
+    setDefaultUserType(userIdMap);
     String userType = getUserType(userIdMap);
     Map<String, Object> userMap = (Map<String, Object>) resultMap.get(userType);
     userMap =
@@ -128,6 +128,9 @@ public class UserProviderRegistryImpl implements UserExtension {
   private String getAccessToken(Map<String, Object> userProfileMap) {
     String accessToken =
         (String) userProfileMap.get(HeaderParam.X_Authenticated_User_Token.getName());
+    if (userProfileMap.containsKey(HeaderParam.X_Authenticated_User_Token.getName())) {
+      userProfileMap.remove(HeaderParam.X_Authenticated_User_Token.getName());
+    }
     return accessToken;
   }
 
