@@ -28,7 +28,6 @@ public class UserProviderRegistryImpl implements UserExtension {
   private static Config userReadConfig;
   private static String defaultUserType =
       ProjectUtil.getConfigValue(JsonKey.SUNBIRD_DEFAULT_USER_TYPE);
-  private static String userAccessToken = "accessToken";
 
   static {
     userEnumsConfig = ConfigUtil.loadConfig(SunbirdExtensionConstants.USER_ENUMS_MAPPING_FILE);
@@ -38,43 +37,18 @@ public class UserProviderRegistryImpl implements UserExtension {
 
   @Override
   public void create(Map<String, Object> userProfileMap) {
-    setDefaultUserType(userProfileMap);
-    setDefaultUserAccessToken(userProfileMap);
-    addUser(userProfileMap);
-  }
-
-  @Override
-  public Map<String, Object> read(Map<String, Object> userIdMap) {
-    setDefaultUserAccessToken(userIdMap);
-    return readUser(userIdMap);
-  }
-
-  @Override
-  public void update(Map<String, Object> userProfileMap) {
-    setDefaultUserType(userProfileMap);
-    setDefaultUserAccessToken(userProfileMap);
-    updateUser(userProfileMap);
-  }
-
-  @Override
-  public void delete(Map<String, Object> userIdMap) {
-    setDefaultUserAccessToken(userIdMap);
-    deleteUser(userIdMap);
-  }
-
-  private void addUser(Map<String, Object> userProfileMap) {
     String accessToken = getAccessToken(userProfileMap);
     Map<String, Object> userMap = getUserMapForWrite(userProfileMap);
     String registryId = OpensaberClientUtil.addEntity(userMap, accessToken);
     userProfileMap.put(JsonKey.REGISTRY_ID, registryId);
   }
 
-  private Map<String, Object> readUser(Map<String, Object> userIdMap) {
+  @Override
+  public Map<String, Object> read(Map<String, Object> userIdMap) {
     String accessToken = getAccessToken(userIdMap);
     String registryId = getRegistryId(userIdMap);
     Map<String, Object> resultMap = OpensaberClientUtil.readEntity(registryId, accessToken);
 
-    setDefaultUserType(userIdMap);
     String userType = getUserType(userIdMap);
     Map<String, Object> userMap = (Map<String, Object>) resultMap.get(userType);
     userMap =
@@ -88,13 +62,15 @@ public class UserProviderRegistryImpl implements UserExtension {
     return userMap;
   }
 
-  private void updateUser(Map<String, Object> userProfileMap) {
+  @Override
+  public void update(Map<String, Object> userProfileMap) {
     String accessToken = getAccessToken(userProfileMap);
     Map<String, Object> userMap = getUserMapForWrite(userProfileMap);
     OpensaberClientUtil.updateEntity(userMap, accessToken);
   }
 
-  private void deleteUser(Map<String, Object> userIdMap) {
+  @Override
+  public void delete(Map<String, Object> userIdMap) {
     String accessToken = getAccessToken(userIdMap);
     String registryId = getRegistryId(userIdMap);
     OpensaberClientUtil.deleteEntity(registryId, accessToken);
@@ -115,6 +91,7 @@ public class UserProviderRegistryImpl implements UserExtension {
 
   private String getUserType(Map<String, Object> userProfileMap) {
     String userType = (String) userProfileMap.get(SunbirdExtensionConstants.USER_TYPE);
+    userType = StringUtils.isBlank(userType) ? defaultUserType : userType;
     if (StringUtils.isBlank(userType)) {
       ProjectLogger.log(
           "UserProviderRegistryImpl:getUserType: User type is blank", LoggerEnum.ERROR.name());
@@ -128,9 +105,6 @@ public class UserProviderRegistryImpl implements UserExtension {
   private String getAccessToken(Map<String, Object> userProfileMap) {
     String accessToken =
         (String) userProfileMap.get(HeaderParam.X_Authenticated_User_Token.getName());
-    if (userProfileMap.containsKey(HeaderParam.X_Authenticated_User_Token.getName())) {
-      userProfileMap.remove(HeaderParam.X_Authenticated_User_Token.getName());
-    }
     return accessToken;
   }
 
@@ -144,17 +118,5 @@ public class UserProviderRegistryImpl implements UserExtension {
           ResponseCode.errorRegistryEntityIdBlank.getErrorMessage());
     }
     return registryId;
-  }
-
-  private void setDefaultUserType(Map userProfileMap) {
-    if (null == userProfileMap.get(SunbirdExtensionConstants.USER_TYPE)) {
-      userProfileMap.put(SunbirdExtensionConstants.USER_TYPE, defaultUserType);
-    }
-  }
-
-  private void setDefaultUserAccessToken(Map userProfileMap) {
-    if (null == userProfileMap.get(HeaderParam.X_Authenticated_User_Token.getName())) {
-      userProfileMap.put(HeaderParam.X_Authenticated_User_Token.getName(), userAccessToken);
-    }
   }
 }
