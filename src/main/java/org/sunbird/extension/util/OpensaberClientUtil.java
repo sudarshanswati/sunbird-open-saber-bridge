@@ -99,6 +99,9 @@ public class OpensaberClientUtil {
     ResponseData<String> responseData = null;
     try {
       responseData = client.readEntity(new URI(entityId), getHeader(accessToken));
+      ProjectLogger.log(
+          "OpensaberClientUtil:readEntity: repsonseData = " + responseData.getResponseData(),
+          LoggerEnum.INFO.name());
     } catch (TransformationException | IOException | URISyntaxException e) {
       ProjectLogger.log(
           "OpensaberClientUtil:readEntity: Registry client read entity resulted in exception = "
