@@ -50,6 +50,7 @@ public class OpensaberClientUtil {
 
   public static String addEntity(Map<String, Object> requestMap, String accessToken) {
 
+    ProjectLogger.log("OpensaberClientUtil:addEntity: START", LoggerEnum.INFO.name());
     ResponseData<String> responseData = null;
     try {
       responseData =
@@ -85,11 +86,16 @@ public class OpensaberClientUtil {
           ResponseCode.errorRegistryAddEntity,
           ResponseCode.errorRegistryAddEntity.getErrorMessage());
     }
+    ProjectLogger.log(
+        "OpensaberClientUtil:addEntity: END - Entity Created Successfully = " + entityId,
+        LoggerEnum.INFO.name());
     return entityId;
   }
 
   public static Map<String, Object> readEntity(String entityId, String accessToken) {
 
+    ProjectLogger.log(
+        "OpensaberClientUtil:readEntity: START - EntityId = " + entityId, LoggerEnum.INFO.name());
     ResponseData<String> responseData = null;
     try {
       responseData = client.readEntity(new URI(entityId), getHeader(accessToken));
@@ -122,11 +128,15 @@ public class OpensaberClientUtil {
           ResponseCode.errorRegistryReadEntity.getErrorMessage());
     }
 
+    ProjectLogger.log(
+        "OpensaberClientUtil:readEntity: END - Entity Read Successfully = " + entityId,
+        LoggerEnum.INFO.name());
     return resultMap;
   }
 
   public static void updateEntity(Map<String, Object> requestMap, String accessToken) {
 
+    ProjectLogger.log("OpensaberClientUtil:updateEntity: START", LoggerEnum.INFO.name());
     ResponseData<String> responseData = null;
     try {
       responseData =
@@ -157,10 +167,15 @@ public class OpensaberClientUtil {
           ResponseCode.errorRegistryUpdateEntity,
           ResponseCode.errorRegistryUpdateEntity.getErrorMessage());
     }
+    ProjectLogger.log(
+        "OpensaberClientUtil:updateEntity: END - Entity Updated Successfully",
+        LoggerEnum.INFO.name());
   }
 
   public static void deleteEntity(String entityId, String accessToken) {
 
+    ProjectLogger.log(
+        "OpensaberClientUtil:deleteEntity: START - EntityId = " + entityId, LoggerEnum.INFO.name());
     ResponseData<String> responseData = null;
     try {
       responseData = client.deleteEntity(new URI(entityId), getHeader(accessToken));
@@ -189,6 +204,9 @@ public class OpensaberClientUtil {
           ResponseCode.errorRegistryDeleteEntity,
           ResponseCode.errorRegistryDeleteEntity.getErrorMessage());
     }
+    ProjectLogger.log(
+        "OpensaberClientUtil:deleteEntity: END - Entity Deleted Successfully = " + entityId,
+        LoggerEnum.INFO.name());
   }
 
   private static Map<String, String> getHeader(String accessToken) {

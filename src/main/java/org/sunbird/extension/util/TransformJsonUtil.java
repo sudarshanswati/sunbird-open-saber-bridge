@@ -48,6 +48,14 @@ public class TransformJsonUtil {
       String operationMode,
       String fieldsConfigFile) {
 
+    ProjectLogger.log(
+        "TransformJsonUtil:transform: JSON Transformation Starts. FieldsConfigurationFile = "
+            + fieldsConfigFile
+            + " RootConfiguration = "
+            + rootConfig
+            + " OperationMode = "
+            + operationMode,
+        LoggerEnum.INFO.name());
     Map<String, Object> outputMap = new HashMap<String, Object>();
     Set<String> userInputSet = userInputMap.keySet();
     String prefix = rootConfig + TransformationConstants.DOT;
@@ -76,6 +84,14 @@ public class TransformJsonUtil {
       }
     }
 
+    ProjectLogger.log(
+        "TransformJsonUtil:transform: JSON Transformation Ends. FieldsConfigurationFile = "
+            + fieldsConfigFile
+            + " RootConfiguration = "
+            + rootConfig
+            + " OperationMode = "
+            + operationMode,
+        LoggerEnum.INFO.name());
     return outputMap;
   }
 
