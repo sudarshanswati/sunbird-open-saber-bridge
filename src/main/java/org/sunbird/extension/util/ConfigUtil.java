@@ -11,6 +11,8 @@ public class ConfigUtil {
 
   public static Config loadConfig(String fileName) {
     Config config = null;
+    ProjectLogger.log(
+        "ConfigUtil:loadConfig: Loading Configuration File = " + fileName, LoggerEnum.INFO.name());
     try {
       config = ConfigFactory.load(fileName);
     } catch (Exception e) {

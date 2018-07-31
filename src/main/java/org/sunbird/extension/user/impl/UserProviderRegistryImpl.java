@@ -37,16 +37,25 @@ public class UserProviderRegistryImpl implements UserExtension {
 
   @Override
   public void create(Map<String, Object> userProfileMap) {
+    ProjectLogger.log(
+        "UserProviderRegistryImpl:create: Creating an user in registry", LoggerEnum.INFO.name());
     String accessToken = getAccessToken(userProfileMap);
     Map<String, Object> userMap = getUserMapForWrite(userProfileMap);
     String registryId = OpensaberClientUtil.addEntity(userMap, accessToken);
     userProfileMap.put(JsonKey.REGISTRY_ID, registryId);
+    ProjectLogger.log(
+        "UserProviderRegistryImpl:create: User created successfully in registry. Id = "
+            + registryId,
+        LoggerEnum.INFO.name());
   }
 
   @Override
   public Map<String, Object> read(Map<String, Object> userIdMap) {
     String accessToken = getAccessToken(userIdMap);
     String registryId = getRegistryId(userIdMap);
+    ProjectLogger.log(
+        "UserProviderRegistryImpl:read: Reading user from Registry. Id = " + registryId,
+        LoggerEnum.INFO.name());
     Map<String, Object> resultMap = OpensaberClientUtil.readEntity(registryId, accessToken);
 
     String userType = getUserType(userIdMap);
@@ -59,21 +68,39 @@ public class UserProviderRegistryImpl implements UserExtension {
             userEnumsConfig,
             SunbirdExtensionConstants.OPERATION_MODE_READ,
             SunbirdExtensionConstants.USER_READ_MAPPING_FILE);
+    ProjectLogger.log(
+        "UserProviderRegistryImpl:read: User read successfully from registry. Id = " + registryId,
+        LoggerEnum.INFO.name());
     return userMap;
   }
 
   @Override
   public void update(Map<String, Object> userProfileMap) {
+    ProjectLogger.log(
+        "UserProviderRegistryImpl:update: Updating user in registry. Id = "
+            + userProfileMap.get(JsonKey.REGISTRY_ID),
+        LoggerEnum.INFO.name());
     String accessToken = getAccessToken(userProfileMap);
     Map<String, Object> userMap = getUserMapForWrite(userProfileMap);
     OpensaberClientUtil.updateEntity(userMap, accessToken);
+    ProjectLogger.log(
+        "UserProviderRegistryImpl:update: User updated successfully in registry. Id = "
+            + userProfileMap.get(JsonKey.REGISTRY_ID),
+        LoggerEnum.INFO.name());
   }
 
   @Override
   public void delete(Map<String, Object> userIdMap) {
     String accessToken = getAccessToken(userIdMap);
     String registryId = getRegistryId(userIdMap);
+    ProjectLogger.log(
+        "UserProviderRegistryImpl:delete: Deleting user in registry. Id = " + registryId,
+        LoggerEnum.INFO.name());
     OpensaberClientUtil.deleteEntity(registryId, accessToken);
+    ProjectLogger.log(
+        "UserProviderRegistryImpl:delete: User deleted successfully in registry. Id = "
+            + registryId,
+        LoggerEnum.INFO.name());
   }
 
   private Map<String, Object> getUserMapForWrite(Map<String, Object> userProfileMap) {
