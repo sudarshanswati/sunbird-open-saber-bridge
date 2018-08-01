@@ -433,7 +433,7 @@ public class TransformJsonUtil {
     ProjectLogger.log(
         "TransformJsonUtil:getEnumValue : enum value not configured for " + inputValue,
         LoggerEnum.ERROR.name());
-    ProjectCommonException.throwServerErrorException(
+    ProjectCommonException.throwClientErrorException(
         ResponseCode.errorJsonTransformInvalidEnumInput,
         ProjectUtil.formatMessage(
             ResponseCode.errorJsonTransformInvalidEnumInput.getErrorMessage(), fromField));
