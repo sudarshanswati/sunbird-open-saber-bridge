@@ -1,80 +1,149 @@
 package org.sunbird.extension.user.impl;
 
-import java.io.IOException;
-import java.util.HashMap;
+import com.typesafe.config.Config;
 import java.util.Map;
-
-import org.springframework.http.MediaType;
+import org.apache.commons.lang.StringUtils;
+import org.sunbird.common.exception.ProjectCommonException;
+import org.sunbird.common.models.util.JsonKey;
+import org.sunbird.common.models.util.LoggerEnum;
+import org.sunbird.common.models.util.ProjectLogger;
+import org.sunbird.common.models.util.ProjectUtil;
+import org.sunbird.common.request.HeaderParam;
+import org.sunbird.common.responsecode.ResponseCode;
 import org.sunbird.extension.user.UserExtension;
-
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.google.gson.JsonObject;
-
-import io.opensaber.registry.client.OpensaberClient;
-import io.opensaber.registry.client.data.RequestData;
-import io.opensaber.registry.client.data.ResponseData;
-import io.opensaber.registry.exception.TransformationException;
-import io.opensaber.registry.transform.ITransformer;
-import io.opensaber.registry.transform.JsonToJsonLDTransformer;
-import io.opensaber.registry.transform.JsonldToJsonTransformer;
+import org.sunbird.extension.util.ConfigUtil;
+import org.sunbird.extension.util.OpensaberClientUtil;
+import org.sunbird.extension.util.SunbirdExtensionConstants;
+import org.sunbird.extension.util.TransformJsonUtil;
 
 /**
- * Implementation Class of UserExtension Interface
- * @author Jaikumar Soundara Rajan
+ * User profile extension using Open Saber registry for storing adopter specific custom user details
  *
+ * @author Jaikumar Soundara Rajan
  */
 public class UserProviderRegistryImpl implements UserExtension {
 
-	private OpensaberClient client;
-	private ResponseData<String> responseData;
-	private Map<String, String> headers = new HashMap<>();
-	private String accessToken = "accessToken";
+  private static Config userEnumsConfig;
+  private static Config userWriteConfig;
+  private static Config userReadConfig;
+  private static String defaultUserType =
+      ProjectUtil.getConfigValue(JsonKey.SUNBIRD_DEFAULT_USER_TYPE);
 
-	/* (non-Javadoc)
-	 * @see org.sunbird.extension.user.UserExtension#create(java.util.Map)
-	 */
-	public void create(Map<String,Object> extensionMap) {
+  static {
+    userEnumsConfig = ConfigUtil.loadConfig(SunbirdExtensionConstants.USER_ENUMS_MAPPING_FILE);
+    userWriteConfig = ConfigUtil.loadConfig(SunbirdExtensionConstants.USER_WRITE_MAPPING_FILE);
+    userReadConfig = ConfigUtil.loadConfig(SunbirdExtensionConstants.USER_READ_MAPPING_FILE);
+  }
 
-		try {
-			initialize();
-			addUser(extensionMap);
-		} catch (Exception | Error e) {
-			e.printStackTrace();
-		}
+  @Override
+  public void create(Map<String, Object> userProfileMap) {
+    ProjectLogger.log(
+        "UserProviderRegistryImpl:create: Creating an user in registry", LoggerEnum.INFO.name());
+    String accessToken = getAccessToken(userProfileMap);
+    Map<String, Object> userMap = getUserMapForWrite(userProfileMap);
+    String registryId = OpensaberClientUtil.addEntity(userMap, accessToken);
+    userProfileMap.put(JsonKey.REGISTRY_ID, registryId);
+    ProjectLogger.log(
+        "UserProviderRegistryImpl:create: User created successfully in registry. Id = "
+            + registryId,
+        LoggerEnum.INFO.name());
+  }
 
-	}
+  @Override
+  public Map<String, Object> read(Map<String, Object> userIdMap) {
+    String accessToken = getAccessToken(userIdMap);
+    String registryId = getRegistryId(userIdMap);
+    ProjectLogger.log(
+        "UserProviderRegistryImpl:read: Reading user from Registry. Id = " + registryId,
+        LoggerEnum.INFO.name());
+    Map<String, Object> resultMap = OpensaberClientUtil.readEntity(registryId, accessToken);
 
-	/**
-	 * Method to initialize registry client
-	 */
-	private void initialize() {
+    String userType = getUserType(userIdMap);
+    Map<String, Object> userMap = (Map<String, Object>) resultMap.get(userType);
+    userMap =
+        TransformJsonUtil.transform(
+            userReadConfig,
+            userMap,
+            userType,
+            userEnumsConfig,
+            SunbirdExtensionConstants.OPERATION_MODE_READ,
+            SunbirdExtensionConstants.USER_READ_MAPPING_FILE);
+    ProjectLogger.log(
+        "UserProviderRegistryImpl:read: User read successfully from registry. Id = " + registryId,
+        LoggerEnum.INFO.name());
+    return userMap;
+  }
 
-		headers.put("Content-Type", MediaType.APPLICATION_JSON_VALUE);
-		headers.put("x-authenticated-user-token", accessToken);
+  @Override
+  public void update(Map<String, Object> userProfileMap) {
+    ProjectLogger.log(
+        "UserProviderRegistryImpl:update: Updating user in registry. Id = "
+            + userProfileMap.get(JsonKey.REGISTRY_ID),
+        LoggerEnum.INFO.name());
+    String accessToken = getAccessToken(userProfileMap);
+    Map<String, Object> userMap = getUserMapForWrite(userProfileMap);
+    OpensaberClientUtil.updateEntity(userMap, accessToken);
+    ProjectLogger.log(
+        "UserProviderRegistryImpl:update: User updated successfully in registry. Id = "
+            + userProfileMap.get(JsonKey.REGISTRY_ID),
+        LoggerEnum.INFO.name());
+  }
 
-		ITransformer<String> jsonToJsonldTransformer = JsonToJsonLDTransformer.getInstance();
-		ITransformer<String> jsonldToJsonTransformer = JsonldToJsonTransformer.getInstance();
-		client = OpensaberClient.builder().requestTransformer(jsonToJsonldTransformer)
-				.responseTransformer(jsonldToJsonTransformer).build();
-	}
+  @Override
+  public void delete(Map<String, Object> userIdMap) {
+    String accessToken = getAccessToken(userIdMap);
+    String registryId = getRegistryId(userIdMap);
+    ProjectLogger.log(
+        "UserProviderRegistryImpl:delete: Deleting user in registry. Id = " + registryId,
+        LoggerEnum.INFO.name());
+    OpensaberClientUtil.deleteEntity(registryId, accessToken);
+    ProjectLogger.log(
+        "UserProviderRegistryImpl:delete: User deleted successfully in registry. Id = "
+            + registryId,
+        LoggerEnum.INFO.name());
+  }
 
-	/**
-	 * Adds User Entity to the Registry
-	 * @param extensionMap
-	 * @throws JsonProcessingException
-	 * @throws IOException
-	 * @throws TransformationException
-	 */
-	private void addUser(Map<String,Object> extensionMap)
-			throws JsonProcessingException, IOException, TransformationException {
+  private Map<String, Object> getUserMapForWrite(Map<String, Object> userProfileMap) {
+    String userType = getUserType(userProfileMap);
+    Map<String, Object> userMap =
+        TransformJsonUtil.transform(
+            userWriteConfig,
+            userProfileMap,
+            userType,
+            userEnumsConfig,
+            SunbirdExtensionConstants.OPERATION_MODE_WRITE,
+            SunbirdExtensionConstants.USER_WRITE_MAPPING_FILE);
+    return userMap;
+  }
 
-		JsonObject nameObj = new JsonObject();
-		nameObj.addProperty("teacherName",(String) extensionMap.get("name"));
-		JsonObject teacherObj = new JsonObject();
-		teacherObj.add("teacher", nameObj);
+  private String getUserType(Map<String, Object> userProfileMap) {
+    String userType = (String) userProfileMap.get(SunbirdExtensionConstants.USER_TYPE);
+    userType = StringUtils.isBlank(userType) ? defaultUserType : userType;
+    if (StringUtils.isBlank(userType)) {
+      ProjectLogger.log(
+          "UserProviderRegistryImpl:getUserType: User type is blank", LoggerEnum.ERROR.name());
+      ProjectCommonException.throwClientErrorException(
+          ResponseCode.errorRegistryEntityTypeBlank,
+          ResponseCode.errorRegistryEntityTypeBlank.getErrorMessage());
+    }
+    return userType;
+  }
 
-		responseData = client.addEntity(new RequestData<>(teacherObj.toString()), headers);
+  private String getAccessToken(Map<String, Object> userProfileMap) {
+    String accessToken =
+        (String) userProfileMap.get(HeaderParam.X_Authenticated_User_Token.getName());
+    return accessToken;
+  }
 
-	}
-
+  private String getRegistryId(Map<String, Object> userIdMap) {
+    String registryId = (String) userIdMap.get(JsonKey.REGISTRY_ID);
+    if (StringUtils.isBlank(registryId)) {
+      ProjectLogger.log(
+          "UserProviderRegistryImpl:getRegistryId: registryId is blank", LoggerEnum.ERROR.name());
+      ProjectCommonException.throwServerErrorException(
+          ResponseCode.errorRegistryEntityIdBlank,
+          ResponseCode.errorRegistryEntityIdBlank.getErrorMessage());
+    }
+    return registryId;
+  }
 }
