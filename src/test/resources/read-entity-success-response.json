@@ -1,0 +1,59 @@
+{
+	"id": "open-saber.registry.read",
+    "ver": "1.0",
+    "ets": 1533094054055,
+    "params": {
+        "resmsgid": "",
+        "msgid": "b3d6bc2b-f82e-4dd3-8d1b-9b582e7a3979",
+        "err": "",
+        "status": "SUCCCESSFUL",
+        "errmsg": ""
+    },
+	"responseCode": "OK",
+	"result": {
+		"teacher": {
+			"employmentState": "AndhraPradesh",
+			"lastName": "Doe",
+			"disabilityType": ["NotApplicable", "LocoMotorDisability"],
+			"gender": "Male",
+			"highestTeacherQualification": ["TeacherMEd", "TeacherBEd"],
+			"isTeacherInBRC": false,
+			"serviceJoiningDate": "2015-04-07",
+			"trainingsCompleted": ["ICTSkills", "CareerGuidance"],
+			"isTeacherInCRC": false,
+			"highestMathQualification": "Secondary",
+			"highestSSTQualification": "Secondary",
+			"highestVernacularLanguageQualification": "HigherSecondary",
+			"schoolJoiningDate": "2015-04-07",
+			"teacherType": "HeadTeacher",
+			"masterTrainerSubjects": ["ICTSkills", "CareerGuidance"],
+			"teacherStatus": "Approved",
+			"isMasterTrainer": true,
+			"lastUpdatedOn": "2018-05-16",
+			"vernacularLanguageStudied": ["Gujarati", "Tamil"],
+			"email": "sunbird_164@gmail.com",
+			"authenticationStatus": "Authenticated",
+			"highestEnglishQualification": "PostGraduate",
+			"appointmentType": "Regular",
+			"teacherSchoolBoardAffiliation": "StateBoard",
+			"fullName": "John Doe",
+			"telephone": "9999999999",
+			"birthDate": "1992-10-12",
+			"firstName": "John",
+			"teachingExperience": [{
+					"subjectsTaught": ["English", "ForeignLanguage"],
+					"classesTaught": "Class1"
+				}, {
+					"subjectsTaught": ["FineArts", "ForeignLanguage"],
+					"classesTaught": "Class8"
+				}
+			],
+			"teacherId": "104",
+			"activeStatus": "Active",
+			"highestAcademicQualification": ["PostGraduate", "HigherSecondary"],
+			"highestScienceQualification": "Secondary",
+			"schoolCode": "24099999401",
+			"isEnrolledInDELEDProgramme": false
+		}
+	}
+}

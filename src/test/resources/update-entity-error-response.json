@@ -1,0 +1,13 @@
+{
+    "id": "",
+    "ver": "1.0",
+    "ets": 1533628314343,
+    "params": {
+        "resmsgid": "",
+        "msgid": "1f618de7-4fee-43b1-9cc5-f9f89d0a5b7b",
+        "err": "",
+        "status": "UNSUCCESSFUL",
+        "errmsg": "io.opensaber.registry.middleware.impl.RDFValidatorValidation missing for type"
+    },
+    "responseCode": "OK"
+}

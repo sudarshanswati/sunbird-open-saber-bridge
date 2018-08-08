@@ -1,0 +1,16 @@
+{
+	"id": "open-saber.registry.create",
+    "ver": "1.0",
+    "ets": 1533094054055,
+    "params": {
+        "resmsgid": "",
+        "msgid": "b3d6bc2b-f82e-4dd3-8d1b-9b582e7a3979",
+        "err": "",
+        "status": "SUCCCESSFUL",
+        "errmsg": ""
+    },
+	"responseCode": "OK",
+	"result": {
+		"entity": "http://localhost:8080/ba7b659d-3c24-4b71-ae67-5208854a700c"
+	}
+}

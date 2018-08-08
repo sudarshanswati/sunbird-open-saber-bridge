@@ -1,0 +1,19 @@
+{
+	"user": {
+		"name": "John Doe",
+		"telephone": [
+			9999999999
+		],
+		"field8": "dummy",
+		"score": 16.5,
+		"address": {
+			"primary": "232, Brindavan Apts 101010 India"
+		},
+		"isRetired": true,
+		"email": ["primaryEmail@domain.com","secondaryEmail@domain.com"],
+		"languagesKnown" : {
+			"read":["English"]
+		},
+		"age": 25
+	}
+}

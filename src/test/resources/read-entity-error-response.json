@@ -1,0 +1,13 @@
+{
+    "id": "open-saber.registry.read",
+    "ver": "1.0",
+    "ets": 1533628240619,
+    "params": {
+        "resmsgid": "",
+        "msgid": "e506b38b-3448-4bf5-96ce-1ae891a784c6",
+        "err": "",
+        "status": "UNSUCCESSFUL",
+        "errmsg": "Entity does not exist"
+    },
+    "responseCode": "OK"
+}
