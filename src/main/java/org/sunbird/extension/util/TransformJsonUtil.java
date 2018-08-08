@@ -412,7 +412,7 @@ public class TransformJsonUtil {
     }
     if (isListType(toType) && map.containsKey(tofieldHierarchy[tofieldHierarchy.length - 1])) {
       List<Object> list = (List<Object>) map.get(tofieldHierarchy[tofieldHierarchy.length - 1]);
-      list.add(value);
+      list.add(((List<Object>) value).get(0));
       map.put(tofieldHierarchy[tofieldHierarchy.length - 1], list);
     } else {
       map.put(tofieldHierarchy[tofieldHierarchy.length - 1], value);
@@ -462,10 +462,14 @@ public class TransformJsonUtil {
     Object enumName = fieldMap.get(TransformationConstants.ENUM);
     Map<String, String> enumValues = null;
     if (enumName instanceof String) {
-      enumValues =
-          (Map<String, String>)
-              enumsConfig.getAnyRef(
-                  TransformationConstants.ENUMS + TransformationConstants.DOT + enumName);
+      try {
+        enumValues =
+            (Map<String, String>)
+                enumsConfig.getAnyRef(
+                    TransformationConstants.ENUMS + TransformationConstants.DOT + enumName);
+      } catch (ConfigException e) {
+        enumValues = null;
+      }
     } else if (enumName instanceof Map) {
       enumValues = (Map<String, String>) enumName;
     }
