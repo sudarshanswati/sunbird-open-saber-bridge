@@ -412,7 +412,7 @@ public class TransformJsonUtil {
     }
     if (isListType(toType) && map.containsKey(tofieldHierarchy[tofieldHierarchy.length - 1])) {
       List<Object> list = (List<Object>) map.get(tofieldHierarchy[tofieldHierarchy.length - 1]);
-      list.add(((List<Object>) value).get(0));
+      list.addAll((List<Object>) value);
       map.put(tofieldHierarchy[tofieldHierarchy.length - 1], list);
     } else {
       map.put(tofieldHierarchy[tofieldHierarchy.length - 1], value);

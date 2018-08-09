@@ -3,10 +3,7 @@ package org.sunbird.extension.util;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.typesafe.config.Config;
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -17,347 +14,199 @@ import org.powermock.modules.junit4.PowerMockRunner;
 import org.sunbird.common.exception.ProjectCommonException;
 import org.sunbird.common.responsecode.ResponseCode;
 
+@SuppressWarnings({"unchecked", "rawtypes", "serial"})
 @RunWith(PowerMockRunner.class)
 @PowerMockIgnore({"javax.management.*", "javax.net.ssl.*", "javax.security.*"})
 public class TransformJsonUtilTest {
 
+  private static String RESOURCE_PATH = "transformJsonUtilTest/";
   private String rootConfig = "user";
-  private ObjectMapper mapper = new ObjectMapper();
   private String fieldsConfigFile = "test-write-user-mapping.conf";
   private String enumsConfigFile = "test-write-user-enums-mapping.conf";
-  private Config fieldsConfig = ConfigUtil.loadConfig(fieldsConfigFile);
-  private Config enumsConfig = ConfigUtil.loadConfig(enumsConfigFile);
+  private Config fieldsConfig = getConfig(fieldsConfigFile);
+  private Config enumsConfig = getConfig(enumsConfigFile);
 
   @Test
-  public void testTransform() {
-    Map preTransformMap = null;
-    Map expectedTransformedMap = null;
+  public void testTransformSuccess() {
+    Map preTransformMap = getJSONFileAsMap("test-write-user-success-pre-transform.json");
+    Map expectedTransformedMap = getJSONFileAsMap("test-write-user-success-post-transform.json");
     try {
-      preTransformMap = getJSONFileAsMap("test-write-user-pre-transform.json");
-      expectedTransformedMap = getJSONFileAsMap("test-write-user-post-transform.json");
-    } catch (IOException e) {
-      fail();
-    }
-    Map transformedMap =
-        TransformJsonUtil.transform(
-            fieldsConfig,
-            preTransformMap,
-            rootConfig,
-            enumsConfig,
-            SunbirdExtensionConstants.OPERATION_MODE_WRITE,
-            fieldsConfigFile);
-    assertTrue(expectedTransformedMap.equals(transformedMap));
-  }
-
-  @Test
-  public void testTransformWithBlankFilterValue() {
-    Map preTransformMap = new HashMap();
-    preTransformMap.put("externalIds", new ArrayList());
-    try {
-      TransformJsonUtil.transform(
-          fieldsConfig,
-          preTransformMap,
-          rootConfig,
-          enumsConfig,
-          SunbirdExtensionConstants.OPERATION_MODE_WRITE,
-          fieldsConfigFile);
+      Map transformedMap = transformWithWriteMode(preTransformMap);
+      assertTrue(expectedTransformedMap.equals(transformedMap));
     } catch (ProjectCommonException e) {
       fail();
     }
   }
 
   @Test
-  public void testTransformWithNullFilterValue() {
-    Map preTransformMap = new HashMap();
-    preTransformMap.put("externalIds", null);
+  public void testTransformSuccessWithBlankFilterValue() {
+    Map preTransformMap =
+        new HashMap() {
+          {
+            put("externalIds", new ArrayList());
+          }
+        };
     try {
-      TransformJsonUtil.transform(
-          fieldsConfig,
-          preTransformMap,
-          rootConfig,
-          enumsConfig,
-          SunbirdExtensionConstants.OPERATION_MODE_WRITE,
-          fieldsConfigFile);
+      transformWithWriteMode(preTransformMap);
+    } catch (ProjectCommonException e) {
+      fail();
+    }
+  }
+
+  @Test
+  public void testTransformSuccessWithNullFilterValue() {
+    Map preTransformMap =
+        new HashMap() {
+          {
+            put("externalIds", null);
+          }
+        };
+    try {
+      transformWithWriteMode(preTransformMap);
     } catch (ProjectCommonException e) {
       fail();
     }
   }
 
   @Test(expected = ProjectCommonException.class)
-  public void testTransformWithBlankToFieldName() {
-    Map preTransformMap = new HashMap();
-    preTransformMap.put("field1", "value1");
-    try {
-      TransformJsonUtil.transform(
-          fieldsConfig,
-          preTransformMap,
-          rootConfig,
-          enumsConfig,
-          SunbirdExtensionConstants.OPERATION_MODE_WRITE,
-          fieldsConfigFile);
-    } catch (ProjectCommonException e) {
-      assertTrue(
-          e.getCode().equals(ResponseCode.errorJsonTransformBasicConfigMissing.getErrorCode()));
-      throw e;
-    }
+  public void testTransformFailureWithBlankToFieldName() {
+    Map preTransformMap =
+        new HashMap() {
+          {
+            put("field1", "value1");
+          }
+        };
+    transformAndCheckException(preTransformMap, ResponseCode.errorJsonTransformBasicConfigMissing);
   }
 
   @Test(expected = ProjectCommonException.class)
-  public void testTransformWithBlankFromType() {
-    Map preTransformMap = new HashMap();
-    preTransformMap.put("field2", "value2");
-    try {
-      TransformJsonUtil.transform(
-          fieldsConfig,
-          preTransformMap,
-          rootConfig,
-          enumsConfig,
-          SunbirdExtensionConstants.OPERATION_MODE_WRITE,
-          fieldsConfigFile);
-    } catch (ProjectCommonException e) {
-      assertTrue(
-          e.getCode().equals(ResponseCode.errorJsonTransformBasicConfigMissing.getErrorCode()));
-      throw e;
-    }
+  public void testTransformFailureWithBlankFromType() {
+    Map preTransformMap =
+        new HashMap() {
+          {
+            put("field2", "value2");
+          }
+        };
+    transformAndCheckException(preTransformMap, ResponseCode.errorJsonTransformBasicConfigMissing);
   }
 
   @Test(expected = ProjectCommonException.class)
-  public void testTransformWithBlankToType() {
-    Map preTransformMap = new HashMap();
-    preTransformMap.put("field3", "value3");
-    try {
-      TransformJsonUtil.transform(
-          fieldsConfig,
-          preTransformMap,
-          rootConfig,
-          enumsConfig,
-          SunbirdExtensionConstants.OPERATION_MODE_WRITE,
-          fieldsConfigFile);
-    } catch (ProjectCommonException e) {
-      assertTrue(
-          e.getCode().equals(ResponseCode.errorJsonTransformBasicConfigMissing.getErrorCode()));
-      throw e;
-    }
+  public void testTransformFailureWithBlankToType() {
+    Map preTransformMap =
+        new HashMap() {
+          {
+            put("field3", "value3");
+          }
+        };
+    transformAndCheckException(preTransformMap, ResponseCode.errorJsonTransformBasicConfigMissing);
   }
 
   @Test(expected = ProjectCommonException.class)
-  public void testTransformWithNullFilter() {
-    Map preTransformMap = null;
-    try {
-      preTransformMap = getJSONFileAsMap("test-write-user-with-null-filter.json");
-    } catch (IOException e) {
-      fail();
-    }
-    try {
-      TransformJsonUtil.transform(
-          fieldsConfig,
-          preTransformMap,
-          rootConfig,
-          enumsConfig,
-          SunbirdExtensionConstants.OPERATION_MODE_WRITE,
-          fieldsConfigFile);
-    } catch (ProjectCommonException e) {
-      assertTrue(
-          e.getCode().equals(ResponseCode.errorJsonTransformInvalidFilterConfig.getErrorCode()));
-      throw e;
-    }
+  public void testTransformFailureWithNullFilter() {
+    Map preTransformMap = getJSONFileAsMap("test-write-user-failure-with-null-filter.json");
+    transformAndCheckException(preTransformMap, ResponseCode.errorJsonTransformInvalidFilterConfig);
   }
 
   @Test(expected = ProjectCommonException.class)
-  public void testTransformWithBlankFilter() {
-    Map preTransformMap = null;
-    try {
-      preTransformMap = getJSONFileAsMap("test-write-user-with-blank-filter.json");
-    } catch (IOException e) {
-      fail();
-    }
-    try {
-      TransformJsonUtil.transform(
-          fieldsConfig,
-          preTransformMap,
-          rootConfig,
-          enumsConfig,
-          SunbirdExtensionConstants.OPERATION_MODE_WRITE,
-          fieldsConfigFile);
-    } catch (ProjectCommonException e) {
-      assertTrue(
-          e.getCode().equals(ResponseCode.errorJsonTransformInvalidFilterConfig.getErrorCode()));
-      throw e;
-    }
+  public void testTransformFailureWithBlankFilter() {
+    Map preTransformMap = getJSONFileAsMap("test-write-user-failure-with-blank-filter.json");
+    transformAndCheckException(preTransformMap, ResponseCode.errorJsonTransformInvalidFilterConfig);
   }
 
   @Test(expected = ProjectCommonException.class)
-  public void testTransformWithInvalidFilter() {
-    Map preTransformMap = null;
-    try {
-      preTransformMap = getJSONFileAsMap("test-write-user-with-invalid-filter.json");
-    } catch (IOException e) {
-      fail();
-    }
-    try {
-      TransformJsonUtil.transform(
-          fieldsConfig,
-          preTransformMap,
-          rootConfig,
-          enumsConfig,
-          SunbirdExtensionConstants.OPERATION_MODE_WRITE,
-          fieldsConfigFile);
-    } catch (ProjectCommonException e) {
-      assertTrue(
-          e.getCode().equals(ResponseCode.errorJsonTransformInvalidFilterConfig.getErrorCode()));
-      throw e;
-    }
+  public void testTransformFailureWithInvalidFilter() {
+    Map preTransformMap = getJSONFileAsMap("test-write-user-failure-with-invalid-filter.json");
+    transformAndCheckException(preTransformMap, ResponseCode.errorJsonTransformInvalidFilterConfig);
   }
 
   @Test(expected = ProjectCommonException.class)
-  public void testTransformWithBlankFilterField() {
-    Map preTransformMap = null;
-    try {
-      preTransformMap = getJSONFileAsMap("test-write-user-with-blank-filterField.json");
-    } catch (IOException e) {
-      fail();
-    }
-    try {
-      TransformJsonUtil.transform(
-          fieldsConfig,
-          preTransformMap,
-          rootConfig,
-          enumsConfig,
-          SunbirdExtensionConstants.OPERATION_MODE_WRITE,
-          fieldsConfigFile);
-    } catch (ProjectCommonException e) {
-      assertTrue(
-          e.getCode().equals(ResponseCode.errorJsonTransformInvalidFilterConfig.getErrorCode()));
-      throw e;
-    }
+  public void testTransformFailureWithBlankFilterField() {
+    Map preTransformMap = getJSONFileAsMap("test-write-user-failure-with-blank-filterField.json");
+    transformAndCheckException(preTransformMap, ResponseCode.errorJsonTransformInvalidFilterConfig);
   }
 
   @Test(expected = ProjectCommonException.class)
-  public void testTransformWithBlankFiltersField() {
-    Map preTransformMap = null;
-    try {
-      preTransformMap = getJSONFileAsMap("test-write-user-with-blank-filters-field.json");
-    } catch (IOException e) {
-      fail();
-    }
-    try {
-      TransformJsonUtil.transform(
-          fieldsConfig,
-          preTransformMap,
-          rootConfig,
-          enumsConfig,
-          SunbirdExtensionConstants.OPERATION_MODE_WRITE,
-          fieldsConfigFile);
-    } catch (ProjectCommonException e) {
-      assertTrue(
-          e.getCode().equals(ResponseCode.errorJsonTransformInvalidFilterConfig.getErrorCode()));
-      throw e;
-    }
+  public void testTransformFailureWithBlankFiltersField() {
+    Map preTransformMap = getJSONFileAsMap("test-write-user-failure-with-blank-filters-field.json");
+    transformAndCheckException(preTransformMap, ResponseCode.errorJsonTransformInvalidFilterConfig);
   }
 
   @Test(expected = ProjectCommonException.class)
-  public void testTransformWithBlankFiltersValues() {
-    Map preTransformMap = null;
-    try {
-      preTransformMap = getJSONFileAsMap("test-write-user-with-blank-filters-values.json");
-    } catch (IOException e) {
-      fail();
-    }
-    try {
-      TransformJsonUtil.transform(
-          fieldsConfig,
-          preTransformMap,
-          rootConfig,
-          enumsConfig,
-          SunbirdExtensionConstants.OPERATION_MODE_WRITE,
-          fieldsConfigFile);
-    } catch (ProjectCommonException e) {
-      assertTrue(
-          e.getCode().equals(ResponseCode.errorJsonTransformInvalidFilterConfig.getErrorCode()));
-      throw e;
-    }
+  public void testTransformFailureWithBlankFiltersValues() {
+    Map preTransformMap =
+        getJSONFileAsMap("test-write-user-failure-with-blank-filters-values.json");
+    transformAndCheckException(preTransformMap, ResponseCode.errorJsonTransformInvalidFilterConfig);
   }
 
   @Test(expected = ProjectCommonException.class)
-  public void testTransformWithNullEnumMap() {
-    Map preTransformMap = new HashMap();
-    preTransformMap.put("field15", "yes");
-    try {
-      TransformJsonUtil.transform(
-          fieldsConfig,
-          preTransformMap,
-          rootConfig,
-          enumsConfig,
-          SunbirdExtensionConstants.OPERATION_MODE_WRITE,
-          fieldsConfigFile);
-    } catch (ProjectCommonException e) {
-      assertTrue(e.getCode().equals(ResponseCode.errorJsonTransformEnumValuesEmpty.getErrorCode()));
-      throw e;
-    }
+  public void testTransformFailureWithNullEnumMap() {
+    Map preTransformMap =
+        new HashMap() {
+          {
+            put("field15", "yes");
+          }
+        };
+    transformAndCheckException(preTransformMap, ResponseCode.errorJsonTransformEnumValuesEmpty);
   }
 
   @Test(expected = ProjectCommonException.class)
-  public void testTransformWithInvalidListType() {
-    Map preTransformMap = new HashMap();
-    preTransformMap.put("field16", "value16");
-    try {
-      TransformJsonUtil.transform(
-          fieldsConfig,
-          preTransformMap,
-          rootConfig,
-          enumsConfig,
-          SunbirdExtensionConstants.OPERATION_MODE_WRITE,
-          fieldsConfigFile);
-    } catch (ProjectCommonException e) {
-      assertTrue(
-          e.getCode().equals(ResponseCode.errorJsonTransformInvalidTypeConfig.getErrorCode()));
-      throw e;
-    }
+  public void testTransformFailureWithInvalidListType() {
+    Map preTransformMap =
+        new HashMap() {
+          {
+            put("field16", "value16");
+          }
+        };
+    transformAndCheckException(preTransformMap, ResponseCode.errorJsonTransformInvalidTypeConfig);
   }
 
   @Test(expected = ProjectCommonException.class)
-  public void testTransformWithInvalidFromDateFormat() {
-    Map preTransformMap = new HashMap();
-    preTransformMap.put("field17", "2018-08-08");
-    try {
-      TransformJsonUtil.transform(
-          fieldsConfig,
-          preTransformMap,
-          rootConfig,
-          enumsConfig,
-          SunbirdExtensionConstants.OPERATION_MODE_WRITE,
-          fieldsConfigFile);
-    } catch (ProjectCommonException e) {
-      assertTrue(
-          e.getCode().equals(ResponseCode.errorJsonTransformInvalidDateFormat.getErrorCode()));
-      throw e;
-    }
+  public void testTransformFailureWithInvalidFromDateFormat() {
+    Map preTransformMap =
+        new HashMap() {
+          {
+            put("field17", "2018-08-08");
+          }
+        };
+    transformAndCheckException(preTransformMap, ResponseCode.errorJsonTransformInvalidDateFormat);
   }
 
   @Test(expected = ProjectCommonException.class)
-  public void testTransformWithInvalidToDateFormat() {
-    Map preTransformMap = new HashMap();
-    preTransformMap.put("field18", "2018-08-08");
+  public void testTransformFailureWithInvalidToDateFormat() {
+    Map preTransformMap =
+        new HashMap() {
+          {
+            put("field18", "2018-08-08");
+          }
+        };
+    transformAndCheckException(preTransformMap, ResponseCode.errorJsonTransformInvalidDateFormat);
+  }
+
+  private Map<String, Object> transformWithWriteMode(Map preTransformMap) {
+    return TransformJsonUtil.transform(
+        fieldsConfig,
+        preTransformMap,
+        rootConfig,
+        enumsConfig,
+        SunbirdExtensionConstants.OPERATION_MODE_WRITE,
+        fieldsConfigFile);
+  }
+
+  private Map<String, Object> transformAndCheckException(
+      Map preTransformMap, ResponseCode responseCode) {
     try {
-      TransformJsonUtil.transform(
-          fieldsConfig,
-          preTransformMap,
-          rootConfig,
-          enumsConfig,
-          SunbirdExtensionConstants.OPERATION_MODE_WRITE,
-          fieldsConfigFile);
+      return transformWithWriteMode(preTransformMap);
     } catch (ProjectCommonException e) {
-      assertTrue(
-          e.getCode().equals(ResponseCode.errorJsonTransformInvalidDateFormat.getErrorCode()));
+      assertTrue(e.getCode().equals(responseCode.getErrorCode()));
       throw e;
     }
   }
 
-  private Map getJSONFileAsMap(String fileName) throws IOException {
-    return mapper.readValue(getFileAsInputStream(fileName), Map.class);
+  private Map getJSONFileAsMap(String fileName) {
+    return TestUtil.getJSONFileAsMap(RESOURCE_PATH + fileName);
   }
 
-  private InputStream getFileAsInputStream(String fileName) {
-    return this.getClass().getClassLoader().getResourceAsStream(fileName);
+  private Config getConfig(String fileName) {
+    return ConfigUtil.loadConfig(RESOURCE_PATH + fileName);
   }
 }

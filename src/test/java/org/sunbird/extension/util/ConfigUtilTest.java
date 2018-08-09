@@ -15,14 +15,16 @@ import org.sunbird.common.responsecode.ResponseCode;
 @PowerMockIgnore({"javax.management.*", "javax.net.ssl.*", "javax.security.*"})
 public class ConfigUtilTest {
 
+  private static String RESOURCE_PATH = "configUtilTest/";
+
   @Test
-  public void testLoadConfig() {
-    Config config = ConfigUtil.loadConfig("test-write-user-mapping.conf");
+  public void testLoadConfigSuccess() {
+    Config config = ConfigUtil.loadConfig(RESOURCE_PATH + "test-write-user-mapping.conf");
     assertNotNull(config);
   }
 
   @Test(expected = ProjectCommonException.class)
-  public void testLoadConfigWithInvalidFile() {
+  public void testLoadConfigFailureWithNullValue() {
     try {
       ConfigUtil.loadConfig(null);
     } catch (ProjectCommonException e) {

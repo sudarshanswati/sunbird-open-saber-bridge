@@ -1,0 +1,41 @@
+{
+	"firstName": "John",
+	"lastName": "Doe",
+	"gender": "Male",
+	"dob": "1992-10-12",
+	"fullName": "John Doe",
+	"employmentState": "Andhra Pradesh",
+	"teacherType": "Head Teacher",
+	"appointmentType": "Regular",
+	"serviceJoiningDate": "2015-04-07",
+	"disabilityType": ["Not Applicable", "Locomotor"],
+	"teacherSchoolBoardAffiliation": "State",
+	"schoolCode": "24099999401",
+	"highestAcademicQualification": ["PostGraduate", "Higher Secondary"],
+	"highestTeacherQualification": ["M.Ed.", "B.Ed."],
+	"highestMathQualification": "Secondary",
+	"highestScienceQualification": "Secondary",
+	"highestEnglishQualification": "PostGraduate",
+	"highestSSTQualification": "Secondary",
+	"highestVernacularLanguageQualification": "Higher Secondary",
+	"vernacularLanguageStudied": ["Gujarati", "Tamil"],
+	"isEnrolledInDELEDProgramme": false,
+	"classSubjectTaught": [{
+			"classes": "Class 1",
+			"subjects": ["English", "Foreign Language"]
+		}, {
+			"classes": "Class 8",
+			"subjects": ["Fine Arts", "Foreign Language"]
+		}
+	],
+	"schoolJoiningDate": "2015-04-07",
+	"isMasterTrainer": true,
+	"masterTrainerSubjects": ["ICT Skills", "Career Guidance"],
+	"trainingsCompleted": ["ICT Skills", "Career Guidance"],
+	"teacherInBRC": false,
+	"teacherInCRC": false,
+	"teacherStatus": "Approved",
+	"authenticationStatus": "Authenticated",
+	"activeStatus": "Active",
+	"lastUpdatedOn": "2018-05-16"
+}

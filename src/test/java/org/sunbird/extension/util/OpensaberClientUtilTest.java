@@ -3,18 +3,13 @@ package org.sunbird.extension.util;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.opensaber.registry.client.OpensaberClient;
 import io.opensaber.registry.client.data.ResponseData;
 import io.opensaber.registry.exception.TransformationException;
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.stream.Collectors;
 import org.apache.commons.lang.StringUtils;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -27,14 +22,15 @@ import org.powermock.modules.junit4.PowerMockRunner;
 import org.sunbird.common.exception.ProjectCommonException;
 import org.sunbird.common.responsecode.ResponseCode;
 
+@SuppressWarnings({"unchecked", "rawtypes"})
 @RunWith(PowerMockRunner.class)
 @PrepareForTest(OpensaberClient.class)
 @PowerMockIgnore({"javax.management.*", "javax.net.ssl.*", "javax.security.*"})
 public class OpensaberClientUtilTest {
 
-  private ObjectMapper mapper = new ObjectMapper();
-  private String registryId = "http://localhost:8080/ba7b659d-3c24-4b71-ae67-5208854a700c";
-  private String accessToken = "accessToken";
+  private static String RESOURCE_PATH = "opensaberClientUtilTest/";
+  private String REGISTRY_ID = "http://localhost:8080/ba7b659d-3c24-4b71-ae67-5208854a700c";
+  private String ACCESS_TOKEN = "accessToken";
   private static OpensaberClient openSaberClient = null;
 
   @BeforeClass
@@ -44,203 +40,104 @@ public class OpensaberClientUtilTest {
   }
 
   @Test
-  public void testAddEntity() {
-    String addSuccessResponse = null;
-    Map validEntityRegistryFormatMap = null;
+  public void testAddEntitySuccess() {
+    String addSuccessResponse = getJSONFileAsString("add-entity-success-response.json");
+    Map validEntityRegistryFormatMap = getJSONFileAsMap("valid-entity-registry-format.json");
     try {
-      addSuccessResponse = getJSONFileAsString("add-entity-success-response.json");
-      validEntityRegistryFormatMap = getJSONFileAsMap("valid-entity-registry-format.json");
-    } catch (IOException e) {
-      fail();
-    }
-    try {
-      Mockito.when(openSaberClient.addEntity(Mockito.any(), Mockito.any()))
-          .thenReturn(new ResponseData<String>(addSuccessResponse));
-      String entityId = OpensaberClientUtil.addEntity(validEntityRegistryFormatMap, accessToken);
+      String entityId = mockAndAddEntity(addSuccessResponse, validEntityRegistryFormatMap);
       assertTrue(StringUtils.isNotBlank(entityId));
-    } catch (TransformationException
-        | IOException
-        | URISyntaxException
-        | ProjectCommonException e) {
+    } catch (ProjectCommonException e) {
       fail();
-    } finally {
-      Mockito.reset(openSaberClient);
     }
   }
 
   @Test
-  public void testReadEntity() {
-    String readSuccessResponse = null;
-    Map validEntityRegistryFormatMap = null;
+  public void testReadEntitySuccess() {
+    String readSuccessResponse = getJSONFileAsString("read-entity-success-response.json");
+    Map validEntityRegistryFormatMap = getJSONFileAsMap("valid-entity-registry-format.json");
     try {
-      readSuccessResponse = getJSONFileAsString("read-entity-success-response.json");
-      validEntityRegistryFormatMap = getJSONFileAsMap("valid-entity-registry-format.json");
-    } catch (IOException e) {
-      fail();
-    }
-    try {
-      Mockito.when(openSaberClient.readEntity(Mockito.any(), Mockito.any()))
-          .thenReturn(new ResponseData<String>(readSuccessResponse));
-      Map mapFromRegistry = OpensaberClientUtil.readEntity(registryId, accessToken);
+      Map mapFromRegistry = mockAndReadEntity(readSuccessResponse);
       assertTrue(mapFromRegistry.equals(validEntityRegistryFormatMap));
-    } catch (TransformationException
-        | IOException
-        | URISyntaxException
-        | ProjectCommonException e) {
+    } catch (ProjectCommonException e) {
       fail();
-    } finally {
-      Mockito.reset(openSaberClient);
     }
   }
 
   @Test
-  public void testUpdateEntity() {
-    String updateSuccessResponse = null;
-    Map validEntityRegistryFormatMap = null;
+  public void testUpdateEntitySuccess() {
+    String updateSuccessResponse = getJSONFileAsString("update-entity-success-response.json");
+    Map validEntityRegistryFormatMap = getJSONFileAsMap("valid-entity-registry-format.json");
     try {
-      updateSuccessResponse = getJSONFileAsString("update-entity-success-response.json");
-      validEntityRegistryFormatMap = getJSONFileAsMap("valid-entity-registry-format.json");
-    } catch (IOException e) {
+      mockAndUpdateEntity(updateSuccessResponse, validEntityRegistryFormatMap);
+    } catch (ProjectCommonException e) {
       fail();
-    }
-    try {
-      Mockito.when(openSaberClient.updateEntity(Mockito.any(), Mockito.any()))
-          .thenReturn(new ResponseData<String>(updateSuccessResponse));
-      OpensaberClientUtil.updateEntity(validEntityRegistryFormatMap, accessToken);
-    } catch (TransformationException
-        | IOException
-        | URISyntaxException
-        | ProjectCommonException e) {
-      fail();
-    } finally {
-      Mockito.reset(openSaberClient);
     }
   }
 
   @Test
-  public void testDeleteEntity() {
-    String deleteSuccessResponse = null;
+  public void testDeleteEntitySuccess() {
+    String deleteSuccessResponse = getJSONFileAsString("delete-entity-success-response.json");
     try {
-      deleteSuccessResponse = getJSONFileAsString("delete-entity-success-response.json");
-    } catch (IOException e) {
-      fail();
-    }
-    try {
-      Mockito.when(openSaberClient.deleteEntity(Mockito.any(), Mockito.any()))
-          .thenReturn(new ResponseData<String>(deleteSuccessResponse));
-      OpensaberClientUtil.deleteEntity(registryId, accessToken);
-    } catch (IOException | URISyntaxException | ProjectCommonException e) {
-      fail();
-    } finally {
-      Mockito.reset(openSaberClient);
-    }
-  }
-
-  @Test(expected = ProjectCommonException.class)
-  public void testAddEntityWithErrorResponse() {
-    String addErrorResponse = null;
-    try {
-      addErrorResponse = getJSONFileAsString("add-entity-error-response.json");
-    } catch (IOException e) {
-      fail();
-    }
-    try {
-      Mockito.when(openSaberClient.addEntity(Mockito.any(), Mockito.any()))
-          .thenReturn(new ResponseData<String>(addErrorResponse));
-      String entityId = OpensaberClientUtil.addEntity(new HashMap(), accessToken);
-    } catch (TransformationException | IOException | URISyntaxException e) {
-      fail();
+      mockAndDeleteEntity(deleteSuccessResponse);
     } catch (ProjectCommonException e) {
-      assertTrue(
-          e.getMessage().equalsIgnoreCase(ResponseCode.errorRegistryAddEntity.getErrorMessage()));
-      throw e;
-    } finally {
-      Mockito.reset(openSaberClient);
+      fail();
     }
   }
 
   @Test(expected = ProjectCommonException.class)
-  public void testReadEntityWithErrorResponse() {
-    String readErrorResponse = null;
+  public void testAddEntityFailureWithErrorResponse() {
+    String addFailureResponse = getJSONFileAsString("add-entity-failure-response.json");
     try {
-      readErrorResponse = getJSONFileAsString("read-entity-error-response.json");
-    } catch (IOException e) {
-      fail();
-    }
-    try {
-      Mockito.when(openSaberClient.readEntity(Mockito.any(), Mockito.any()))
-          .thenReturn(new ResponseData<String>(readErrorResponse));
-      Map mapFromRegistry = OpensaberClientUtil.readEntity(registryId, accessToken);
-    } catch (TransformationException | IOException | URISyntaxException e) {
-      fail();
+      mockAndAddEntity(addFailureResponse, new HashMap());
     } catch (ProjectCommonException e) {
-      assertTrue(
-          e.getMessage().equalsIgnoreCase(ResponseCode.errorRegistryReadEntity.getErrorMessage()));
+      assertTrue(e.getCode().equals(ResponseCode.errorRegistryAddEntity.getErrorCode()));
       throw e;
-    } finally {
-      Mockito.reset(openSaberClient);
     }
   }
 
   @Test(expected = ProjectCommonException.class)
-  public void testUpdateEntityWithErrorResponse() {
-    String updateErrorResponse = null;
+  public void testReadEntityFailureWithErrorResponse() {
+    String readFailureResponse = getJSONFileAsString("read-entity-failure-response.json");
     try {
-      updateErrorResponse = getJSONFileAsString("update-entity-error-response.json");
-    } catch (IOException e) {
-      fail();
-    }
-    try {
-      Mockito.when(openSaberClient.updateEntity(Mockito.any(), Mockito.any()))
-          .thenReturn(new ResponseData<String>(updateErrorResponse));
-      OpensaberClientUtil.updateEntity(new HashMap(), accessToken);
-    } catch (TransformationException | IOException | URISyntaxException e) {
-      fail();
+      mockAndReadEntity(readFailureResponse);
     } catch (ProjectCommonException e) {
-      assertTrue(
-          e.getMessage()
-              .equalsIgnoreCase(ResponseCode.errorRegistryUpdateEntity.getErrorMessage()));
+      assertTrue(e.getCode().equals(ResponseCode.errorRegistryReadEntity.getErrorCode()));
       throw e;
-    } finally {
-      Mockito.reset(openSaberClient);
     }
   }
 
   @Test(expected = ProjectCommonException.class)
-  public void testDeleteEntityWithErrorResponse() {
-    String deleteErrorResponse = null;
+  public void testUpdateEntityFailureWithErrorResponse() {
+    String updateFailureResponse = getJSONFileAsString("update-entity-failure-response.json");
     try {
-      deleteErrorResponse = getJSONFileAsString("delete-entity-error-response.json");
-    } catch (IOException e) {
-      fail();
-    }
-    try {
-      Mockito.when(openSaberClient.deleteEntity(Mockito.any(), Mockito.any()))
-          .thenReturn(new ResponseData<String>(deleteErrorResponse));
-      OpensaberClientUtil.deleteEntity(registryId, accessToken);
-    } catch (IOException | URISyntaxException e) {
-      fail();
+      mockAndUpdateEntity(updateFailureResponse, new HashMap());
     } catch (ProjectCommonException e) {
-      assertTrue(
-          e.getMessage()
-              .equalsIgnoreCase(ResponseCode.errorRegistryDeleteEntity.getErrorMessage()));
+      assertTrue(e.getCode().equals(ResponseCode.errorRegistryUpdateEntity.getErrorCode()));
       throw e;
-    } finally {
-      Mockito.reset(openSaberClient);
     }
   }
 
   @Test(expected = ProjectCommonException.class)
-  public void testAddEntityIfClientReturnsIOException() {
+  public void testDeleteEntityFailureWithErrorResponse() {
+    String deleteErrorResponse = getJSONFileAsString("delete-entity-failure-response.json");
+    try {
+      mockAndDeleteEntity(deleteErrorResponse);
+    } catch (ProjectCommonException e) {
+      assertTrue(e.getCode().equals(ResponseCode.errorRegistryDeleteEntity.getErrorCode()));
+      throw e;
+    }
+  }
+
+  @Test(expected = ProjectCommonException.class)
+  public void testAddEntityFailureWithClientIOException() {
     try {
       Mockito.when(openSaberClient.addEntity(Mockito.any(), Mockito.any()))
           .thenThrow(IOException.class);
-      String entityId = OpensaberClientUtil.addEntity(new HashMap(), accessToken);
+      OpensaberClientUtil.addEntity(new HashMap(), ACCESS_TOKEN);
     } catch (TransformationException | IOException | URISyntaxException e) {
       fail();
     } catch (ProjectCommonException e) {
-      assertTrue(
-          e.getMessage().equalsIgnoreCase(ResponseCode.errorRegistryAddEntity.getErrorMessage()));
+      assertTrue(e.getCode().equals(ResponseCode.errorRegistryAddEntity.getErrorCode()));
       throw e;
     } finally {
       Mockito.reset(openSaberClient);
@@ -248,16 +145,15 @@ public class OpensaberClientUtilTest {
   }
 
   @Test(expected = ProjectCommonException.class)
-  public void testReadEntityIfClientReturnsIOException() {
+  public void testReadEntityFailureWithClientIOException() {
     try {
       Mockito.when(openSaberClient.readEntity(Mockito.any(), Mockito.any()))
           .thenThrow(IOException.class);
-      Map mapFromRegistry = OpensaberClientUtil.readEntity(registryId, accessToken);
+      OpensaberClientUtil.readEntity(REGISTRY_ID, ACCESS_TOKEN);
     } catch (TransformationException | IOException | URISyntaxException e) {
       fail();
     } catch (ProjectCommonException e) {
-      assertTrue(
-          e.getMessage().equalsIgnoreCase(ResponseCode.errorRegistryReadEntity.getErrorMessage()));
+      assertTrue(e.getCode().equals(ResponseCode.errorRegistryReadEntity.getErrorCode()));
       throw e;
     } finally {
       Mockito.reset(openSaberClient);
@@ -265,17 +161,15 @@ public class OpensaberClientUtilTest {
   }
 
   @Test(expected = ProjectCommonException.class)
-  public void testUpdateEntityIfClientReturnsIOException() {
+  public void testUpdateEntityFailureWithClientIOException() {
     try {
       Mockito.when(openSaberClient.updateEntity(Mockito.any(), Mockito.any()))
           .thenThrow(IOException.class);
-      OpensaberClientUtil.updateEntity(new HashMap(), accessToken);
+      OpensaberClientUtil.updateEntity(new HashMap(), ACCESS_TOKEN);
     } catch (TransformationException | IOException | URISyntaxException e) {
       fail();
     } catch (ProjectCommonException e) {
-      assertTrue(
-          e.getMessage()
-              .equalsIgnoreCase(ResponseCode.errorRegistryUpdateEntity.getErrorMessage()));
+      assertTrue(e.getCode().equals(ResponseCode.errorRegistryUpdateEntity.getErrorCode()));
       throw e;
     } finally {
       Mockito.reset(openSaberClient);
@@ -283,17 +177,15 @@ public class OpensaberClientUtilTest {
   }
 
   @Test(expected = ProjectCommonException.class)
-  public void testDeleteEntityIfClientReturnsIOException() {
+  public void testDeleteEntityFailureWithClientIOException() {
     try {
       Mockito.when(openSaberClient.deleteEntity(Mockito.any(), Mockito.any()))
           .thenThrow(IOException.class);
-      OpensaberClientUtil.deleteEntity(registryId, accessToken);
+      OpensaberClientUtil.deleteEntity(REGISTRY_ID, ACCESS_TOKEN);
     } catch (IOException | URISyntaxException e) {
       fail();
     } catch (ProjectCommonException e) {
-      assertTrue(
-          e.getMessage()
-              .equalsIgnoreCase(ResponseCode.errorRegistryDeleteEntity.getErrorMessage()));
+      assertTrue(e.getCode().equals(ResponseCode.errorRegistryDeleteEntity.getErrorCode()));
       throw e;
     } finally {
       Mockito.reset(openSaberClient);
@@ -301,34 +193,72 @@ public class OpensaberClientUtilTest {
   }
 
   @Test(expected = ProjectCommonException.class)
-  public void testDeleteEntityWithInvalidResponse() {
+  public void testDeleteEntityFailureWithInvalidResponse() {
     try {
-      Mockito.when(openSaberClient.deleteEntity(Mockito.any(), Mockito.any()))
-          .thenReturn(new ResponseData<String>("Invalid Response"));
-      OpensaberClientUtil.deleteEntity(registryId, accessToken);
-    } catch (IOException | URISyntaxException e) {
-      fail();
+      mockAndDeleteEntity("Invalid Response");
     } catch (ProjectCommonException e) {
-      assertTrue(
-          e.getMessage()
-              .equalsIgnoreCase(ResponseCode.errorRegistryParseResponse.getErrorMessage()));
+      assertTrue(e.getCode().equals(ResponseCode.errorRegistryParseResponse.getErrorCode()));
       throw e;
+    }
+  }
+
+  private String mockAndAddEntity(String mockResponse, Map requestMap) {
+    String entityId = null;
+    try {
+      Mockito.when(openSaberClient.addEntity(Mockito.any(), Mockito.any()))
+          .thenReturn(new ResponseData<String>(mockResponse));
+      entityId = OpensaberClientUtil.addEntity(requestMap, ACCESS_TOKEN);
+    } catch (TransformationException | IOException | URISyntaxException e) {
+      fail();
+    } finally {
+      Mockito.reset(openSaberClient);
+    }
+    return entityId;
+  }
+
+  private Map<String, Object> mockAndReadEntity(String mockResponse) {
+    Map<String, Object> mapFromRegistry = null;
+    try {
+      Mockito.when(openSaberClient.readEntity(Mockito.any(), Mockito.any()))
+          .thenReturn(new ResponseData<String>(mockResponse));
+      mapFromRegistry = OpensaberClientUtil.readEntity(REGISTRY_ID, ACCESS_TOKEN);
+    } catch (TransformationException | IOException | URISyntaxException e) {
+      fail();
+    } finally {
+      Mockito.reset(openSaberClient);
+    }
+    return mapFromRegistry;
+  }
+
+  private void mockAndUpdateEntity(String mockResponse, Map requestMap) {
+    try {
+      Mockito.when(openSaberClient.updateEntity(Mockito.any(), Mockito.any()))
+          .thenReturn(new ResponseData<String>(mockResponse));
+      OpensaberClientUtil.updateEntity(requestMap, ACCESS_TOKEN);
+    } catch (TransformationException | IOException | URISyntaxException e) {
+      fail();
     } finally {
       Mockito.reset(openSaberClient);
     }
   }
 
-  private Map getJSONFileAsMap(String fileName) throws IOException {
-    return mapper.readValue(getFileAsInputStream(fileName), Map.class);
+  private void mockAndDeleteEntity(String mockResponse) {
+    try {
+      Mockito.when(openSaberClient.deleteEntity(Mockito.any(), Mockito.any()))
+          .thenReturn(new ResponseData<String>(mockResponse));
+      OpensaberClientUtil.deleteEntity(REGISTRY_ID, ACCESS_TOKEN);
+    } catch (IOException | URISyntaxException e) {
+      fail();
+    } finally {
+      Mockito.reset(openSaberClient);
+    }
   }
 
-  private String getJSONFileAsString(String fileName) throws IOException {
-    return new BufferedReader(new InputStreamReader(getFileAsInputStream(fileName)))
-        .lines()
-        .collect(Collectors.joining("\n"));
+  private Map getJSONFileAsMap(String fileName) {
+    return TestUtil.getJSONFileAsMap(RESOURCE_PATH + fileName);
   }
 
-  private InputStream getFileAsInputStream(String fileName) {
-    return this.getClass().getClassLoader().getResourceAsStream(fileName);
+  private String getJSONFileAsString(String fileName) {
+    return TestUtil.getJSONFileAsString(RESOURCE_PATH + fileName);
   }
 }
