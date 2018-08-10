@@ -1,0 +1,31 @@
+{
+	"firstName": "John",
+	"lastName": "Doe",
+	"field4": null,
+	"field5": "",
+	"field6": [],
+	"field8": "dummy",
+	"externalIds": [{
+		"id": "1234KJFKE9",
+		"idType": "AAD",
+		"provider": "Centre"
+	},{
+		"id": "ASUID74127",
+		"idType": "SSN",
+		"provider": "State"
+	}],
+	"phone": "9999999999",
+	"score": ["16.5","48.9"],
+	"address":{
+		"doorNo": "232, Brindavan Apts",
+		"pinCode": "101010",
+		"country": "India"
+	},
+	"isRetired": "YES",
+	"primaryEmail": "primaryEmail@domain.com",
+	"secondaryEmail": "secondaryEmail@domain.com",
+	"languages": {
+		"read":["English"]
+	},
+	"age": "25"
+}

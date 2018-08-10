@@ -1,0 +1,56 @@
+{
+	"firstName": "John",
+	"lastName": "Doe",
+	"email": "sunbird_164@gmail.com",
+	"userName": "sunbird_164",
+	"phone": "9999999999",
+	"phoneVerified": true,
+	"gender": "male",
+	"dob": "1992-10-12",
+	"language": ["English", "Hindi"],
+	"externalIds": [{
+			"id": "104",
+			"idType": "teacherID",
+			"provider": "shaalakosh"
+		}, {
+			"id": "UIFE79D104",
+			"idType": "stateTeacherID",
+			"provider": "state"
+		}
+	],
+	"fullName": "John Doe",
+	"employmentState": "Andhra Pradesh",
+	"teacherType": "Head Teacher",
+	"appointmentType": "Regular",
+	"serviceJoiningDate": "2015-04-07",
+	"disabilityType": ["Not Applicable", "Locomotor"],
+	"teacherSchoolBoardAffiliation": "State",
+	"schoolCode": "24099999401",
+	"highestAcademicQualification": ["PostGraduate", "Higher Secondary"],
+	"highestTeacherQualification": ["M.Ed.", "B.Ed."],
+	"highestMathQualification": "Secondary",
+	"highestScienceQualification": "Secondary",
+	"highestEnglishQualification": "PostGraduate",
+	"highestSSTQualification": "Secondary",
+	"highestVernacularLanguageQualification": "Higher Secondary",
+	"vernacularLanguageStudied": ["Gujarati", "Tamil"],
+	"isEnrolledInDeiedProgramme": false,
+	"classSubjectTaught": [{
+			"classes": "Class 1",
+			"subjects": ["English", "Foreign Language"]
+		}, {
+			"classes": "Class 8",
+			"subjects": ["Fine Arts", "Foreign Language"]
+		}
+	],
+	"schoolJoiningDate": "2015-04-07",
+	"isMasterTrainer": true,
+	"masterTrainerSubjects": ["ICT Skills", "Career Guidance"],
+	"trainingsCompleted": ["ICT Skills", "Career Guidance"],
+	"teacherInBRC": false,
+	"teacherInCRC": false,
+	"teacherStatus": "Approved",
+	"authenticationStatus": "Authenticated",
+	"activeStatus": "PASSIVE",
+	"lastUpdatedOn": "2018-05-16"
+}

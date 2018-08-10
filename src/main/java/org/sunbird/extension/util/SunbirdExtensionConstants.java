@@ -12,7 +12,7 @@ public final class SunbirdExtensionConstants {
   public static final String USER_TYPE = "userType";
   public static final String USER_WRITE_MAPPING_FILE = "registry-user-write-mapping.conf";
   public static final String USER_READ_MAPPING_FILE = "registry-user-read-mapping.conf";
-  public static final String USER_ENUMS_MAPPING_FILE = "sunbird-registry-enums-mapping.conf";
+  public static final String USER_ENUMS_MAPPING_FILE = "registry-user-enums-mapping.conf";
   public static final String OPERATION_MODE_WRITE = "WRITE";
   public static final String OPERATION_MODE_READ = "READ";
 
