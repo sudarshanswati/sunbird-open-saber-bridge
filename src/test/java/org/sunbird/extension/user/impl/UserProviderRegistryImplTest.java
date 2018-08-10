@@ -1,10 +1,12 @@
 package org.sunbird.extension.user.impl;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.powermock.api.mockito.PowerMockito.mockStatic;
 
+import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.Before;
@@ -17,6 +19,7 @@ import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 import org.sunbird.common.exception.ProjectCommonException;
 import org.sunbird.common.models.util.JsonKey;
+import org.sunbird.common.models.util.ProjectUtil;
 import org.sunbird.common.responsecode.ResponseCode;
 import org.sunbird.extension.user.UserExtension;
 import org.sunbird.extension.util.OpensaberClientUtil;
@@ -35,6 +38,11 @@ public class UserProviderRegistryImplTest {
   @Before
   public void setup() {
     mockStatic(OpensaberClientUtil.class);
+  }
+
+  @Test
+  public void testUserProviderRegistryImplInstanceCreationSuccess() {
+    assertNotNull(new UserProviderRegistryImpl());
   }
 
   @Test
@@ -104,6 +112,33 @@ public class UserProviderRegistryImplTest {
     } catch (ProjectCommonException e) {
       assertTrue(e.getCode().equals(ResponseCode.errorRegistryEntityIdBlank.getErrorCode()));
       throw e;
+    }
+  }
+
+  @Test(expected = ProjectCommonException.class)
+  public void testCreateUserFailureWithBlankUserType() {
+    Field defaultUserType = null;
+    try {
+      defaultUserType = UserProviderRegistryImpl.class.getDeclaredField("defaultUserType");
+      defaultUserType.setAccessible(true);
+      defaultUserType.set(null, null);
+    } catch (NoSuchFieldException
+        | SecurityException
+        | IllegalArgumentException
+        | IllegalAccessException e) {
+      fail();
+    }
+    try {
+      createUser("test-create-user-success.json");
+    } catch (ProjectCommonException e) {
+      e.getCode().equals(ResponseCode.errorRegistryEntityTypeBlank.getErrorCode());
+      throw e;
+    } finally {
+      try {
+        defaultUserType.set(null, ProjectUtil.getConfigValue(JsonKey.SUNBIRD_DEFAULT_USER_TYPE));
+      } catch (IllegalArgumentException | IllegalAccessException e) {
+        fail();
+      }
     }
   }
 

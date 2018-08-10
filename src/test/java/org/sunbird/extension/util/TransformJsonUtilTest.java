@@ -1,5 +1,6 @@
 package org.sunbird.extension.util;
 
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -25,6 +26,11 @@ public class TransformJsonUtilTest {
   private String enumsConfigFile = "test-write-user-enums-mapping.conf";
   private Config fieldsConfig = getConfig(fieldsConfigFile);
   private Config enumsConfig = getConfig(enumsConfigFile);
+
+  @Test
+  public void testTransformJsonUtilInstanceCreationSuccess() {
+    assertNotNull(new TransformJsonUtil());
+  }
 
   @Test
   public void testTransformSuccess() {

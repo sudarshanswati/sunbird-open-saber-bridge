@@ -1,5 +1,6 @@
 package org.sunbird.extension.util;
 
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -37,6 +38,11 @@ public class OpensaberClientUtilTest {
   public static void setup() throws Exception {
     openSaberClient = Mockito.mock(OpensaberClient.class);
     PowerMockito.whenNew(OpensaberClient.class).withAnyArguments().thenReturn(openSaberClient);
+  }
+
+  @Test
+  public void testOpensaberClientUtilInstanceCreationSuccess() {
+    assertNotNull(new OpensaberClientUtil());
   }
 
   @Test
