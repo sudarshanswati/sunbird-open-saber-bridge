@@ -66,8 +66,7 @@ public class UserProviderRegistryImpl implements UserExtension {
             userMap,
             userType,
             userEnumsConfig,
-            SunbirdExtensionConstants.OPERATION_MODE_READ,
-            SunbirdExtensionConstants.USER_READ_MAPPING_FILE);
+            SunbirdExtensionConstants.OPERATION_MODE_READ);
     ProjectLogger.log(
         "UserProviderRegistryImpl:read: User read successfully from registry. Id = " + registryId,
         LoggerEnum.INFO.name());
@@ -111,8 +110,7 @@ public class UserProviderRegistryImpl implements UserExtension {
             userProfileMap,
             userType,
             userEnumsConfig,
-            SunbirdExtensionConstants.OPERATION_MODE_WRITE,
-            SunbirdExtensionConstants.USER_WRITE_MAPPING_FILE);
+            SunbirdExtensionConstants.OPERATION_MODE_WRITE);
     return userMap;
   }
 
