@@ -22,10 +22,8 @@ public class TransformJsonUtilTest {
 
   private static String RESOURCE_PATH = "transformJsonUtilTest/";
   private String rootConfig = "user";
-  private String fieldsConfigFile = "test-write-user-mapping.conf";
-  private String enumsConfigFile = "test-write-user-enums-mapping.conf";
-  private Config fieldsConfig = getConfig(fieldsConfigFile);
-  private Config enumsConfig = getConfig(enumsConfigFile);
+  private Config fieldsConfig = getConfig("test-write-user-mapping.conf");
+  private Config enumsConfig = getConfig("test-write-user-enums-mapping.conf");
 
   @Test
   public void testTransformJsonUtilInstanceCreationSuccess() {
@@ -108,20 +106,20 @@ public class TransformJsonUtilTest {
   }
 
   @Test(expected = ProjectCommonException.class)
-  public void testTransformFailureWithNullFilter() {
-    Map preTransformMap = getJSONFileAsMap("test-write-user-failure-with-null-filter.json");
+  public void testTransformFailureWithNullFilters() {
+    Map preTransformMap = getJSONFileAsMap("test-write-user-failure-with-null-filters.json");
     transformAndCheckException(preTransformMap, ResponseCode.errorJsonTransformInvalidFilterConfig);
   }
 
   @Test(expected = ProjectCommonException.class)
-  public void testTransformFailureWithBlankFilter() {
-    Map preTransformMap = getJSONFileAsMap("test-write-user-failure-with-blank-filter.json");
+  public void testTransformFailureWithBlankFilters() {
+    Map preTransformMap = getJSONFileAsMap("test-write-user-failure-with-blank-filters.json");
     transformAndCheckException(preTransformMap, ResponseCode.errorJsonTransformInvalidFilterConfig);
   }
 
   @Test(expected = ProjectCommonException.class)
-  public void testTransformFailureWithInvalidFilter() {
-    Map preTransformMap = getJSONFileAsMap("test-write-user-failure-with-invalid-filter.json");
+  public void testTransformFailureWithInvalidFilters() {
+    Map preTransformMap = getJSONFileAsMap("test-write-user-failure-with-invalid-filters.json");
     transformAndCheckException(preTransformMap, ResponseCode.errorJsonTransformInvalidFilterConfig);
   }
 
@@ -132,15 +130,16 @@ public class TransformJsonUtilTest {
   }
 
   @Test(expected = ProjectCommonException.class)
-  public void testTransformFailureWithBlankFiltersField() {
-    Map preTransformMap = getJSONFileAsMap("test-write-user-failure-with-blank-filters-field.json");
+  public void testTransformFailureWithBlankFieldInFilters() {
+    Map preTransformMap =
+        getJSONFileAsMap("test-write-user-failure-with-blank-field-in-filters.json");
     transformAndCheckException(preTransformMap, ResponseCode.errorJsonTransformInvalidFilterConfig);
   }
 
   @Test(expected = ProjectCommonException.class)
-  public void testTransformFailureWithBlankFiltersValues() {
+  public void testTransformFailureWithBlankValuesInFilters() {
     Map preTransformMap =
-        getJSONFileAsMap("test-write-user-failure-with-blank-filters-values.json");
+        getJSONFileAsMap("test-write-user-failure-with-blank-values-in-filters.json");
     transformAndCheckException(preTransformMap, ResponseCode.errorJsonTransformInvalidFilterConfig);
   }
 
@@ -194,8 +193,7 @@ public class TransformJsonUtilTest {
         preTransformMap,
         rootConfig,
         enumsConfig,
-        SunbirdExtensionConstants.OPERATION_MODE_WRITE,
-        fieldsConfigFile);
+        SunbirdExtensionConstants.OPERATION_MODE_WRITE);
   }
 
   private Map<String, Object> transformAndCheckException(

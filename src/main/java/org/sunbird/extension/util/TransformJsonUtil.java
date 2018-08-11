@@ -45,9 +45,9 @@ public class TransformJsonUtil {
       Map<String, Object> userInputMap,
       String rootConfig,
       Config enumsConfig,
-      String operationMode,
-      String fieldsConfigFile) {
+      String operationMode) {
 
+    String fieldsConfigFile = ConfigUtil.getConfigOriginFile(fieldsConfig);
     ProjectLogger.log(
         "TransformJsonUtil:transform: JSON Transformation Starts. FieldsConfigurationFile = "
             + fieldsConfigFile
@@ -66,14 +66,7 @@ public class TransformJsonUtil {
         if (!fieldMap.containsKey(TransformationConstants.FROM_FIELD_NAME)) {
           fieldMap.put(TransformationConstants.FROM_FIELD_NAME, key);
         }
-        transformField(
-            fieldMap,
-            userInputMap,
-            outputMap,
-            fieldsConfig,
-            enumsConfig,
-            operationMode,
-            fieldsConfigFile);
+        transformField(fieldMap, userInputMap, outputMap, fieldsConfig, enumsConfig, operationMode);
       } catch (ConfigException e) {
         ProjectLogger.log(
             "TransformJsonUtil:transform : "
@@ -101,8 +94,7 @@ public class TransformJsonUtil {
       Map<String, Object> outputMap,
       Config fieldsConfig,
       Config enumsConfig,
-      String operationMode,
-      String fieldsConfigFile) {
+      String operationMode) {
 
     Object fieldValue = null;
     String fromField = null;
@@ -146,13 +138,7 @@ public class TransformJsonUtil {
       if (isCustomListType(fromField, fromType) && isCustomListType(fromField, toType)) {
         fieldValue =
             getTransformedFieldValueCustomListType(
-                fromField,
-                fromType,
-                fieldValue,
-                fieldsConfig,
-                enumsConfig,
-                operationMode,
-                fieldsConfigFile);
+                fromField, fromType, fieldValue, fieldsConfig, enumsConfig, operationMode);
       } else {
         Map<String, String> enumValues =
             getConfiguredEnumValues(fromField, fieldMap, enumsConfig, operationMode);
@@ -255,8 +241,7 @@ public class TransformJsonUtil {
       Object fieldValue,
       Config fieldsConfig,
       Config enumsConfig,
-      String operationMode,
-      String fieldsConfigFile) {
+      String operationMode) {
     String fromListElementType = getListType(fromField, fromType);
     List<Map<String, Object>> outputList = new ArrayList<Map<String, Object>>();
     if (isCustomListType(fromField, fromType)) {
@@ -265,12 +250,7 @@ public class TransformJsonUtil {
         Map<String, Object> outMap = null;
         outMap =
             transform(
-                fieldsConfig,
-                inputMapFromList,
-                fromListElementType,
-                enumsConfig,
-                operationMode,
-                fieldsConfigFile);
+                fieldsConfig, inputMapFromList, fromListElementType, enumsConfig, operationMode);
         outputList.add(outMap);
       }
     } else {
