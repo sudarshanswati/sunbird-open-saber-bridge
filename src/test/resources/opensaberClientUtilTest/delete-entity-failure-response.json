@@ -1,0 +1,13 @@
+{
+    "id": "open-saber.registry.delete",
+    "ver": "1.0",
+    "ets": 1533628265483,
+    "params": {
+        "resmsgid": "",
+        "msgid": "7c8de984-7985-433f-8f58-e867683da813",
+        "err": "",
+        "status": "UNSUCCESSFUL",
+        "errmsg": "Entity does not exist"
+    },
+    "responseCode": "OK"
+}
