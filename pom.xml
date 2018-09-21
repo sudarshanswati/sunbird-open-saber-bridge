@@ -13,6 +13,7 @@
 
   <modules>
 	  <module>opensaberclient/open-saber-client</module>
+	  <module>sunbirdutils/sunbird-utils</module>
 	  <module>open-saber-bridge</module>
   </modules>
 </project>

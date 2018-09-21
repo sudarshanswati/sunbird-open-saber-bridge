@@ -2,3 +2,7 @@
 	path = opensaberclient/open-saber-client
 	url = https://github.com/project-sunbird/open-saber-client.git
 	branch = release-1.9
+[submodule "sunbirdutils/sunbird-utils"]
+	path = sunbirdutils/sunbird-utils
+	url = https://github.com/project-sunbird/sunbird-utils.git
+	branch = release-1.11
