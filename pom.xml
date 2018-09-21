@@ -12,8 +12,8 @@
   </properties>
 
   <modules>
-	  <module>opensaberclient/open-saber-client</module>
-	  <module>sunbirdutils/sunbird-utils</module>
+	  <module>modules/open-saber-client</module>
+	  <module>modules/sunbird-utils</module>
 	  <module>open-saber-bridge</module>
   </modules>
 </project>
