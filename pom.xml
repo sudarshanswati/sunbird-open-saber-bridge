@@ -10,7 +10,9 @@
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 	</properties>
-
+    <modules>
+		<module>opensaber/open-saber-client</module>
+	</modules>
 	<dependencies>
 		<dependency>
 			<groupId>com.google.guava</groupId>
